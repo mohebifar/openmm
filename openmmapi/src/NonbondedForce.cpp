@@ -143,11 +143,15 @@ int NonbondedForce::addParticle(double charge, double sigma, double epsilon) {
     return particles.size()-1;
 }
 
-void NonbondedForce::getParticleParameters(int index, double& charge, double& sigma, double& epsilon) const {
+void NonbondedForce::getParticleParameters(int index, double& charge, double& sigma, double& epsilon, double& c6, double& c8, double& c10, double& c12) const {
     ASSERT_VALID_INDEX(index, particles);
     charge = particles[index].charge;
     sigma = particles[index].sigma;
     epsilon = particles[index].epsilon;
+    c6 = particles[index].c6;
+    c8 = particles[index].c8;
+    c10 = particles[index].c10;
+    c12 = particles[index].c12;
 }
 
 void NonbondedForce::setParticleParameters(int index, double charge, double sigma, double epsilon) {

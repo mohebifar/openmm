@@ -513,6 +513,13 @@ void CpuNonbondedForce::threadComputeDirect(ThreadPool& threads, int threadIndex
 void CpuNonbondedForce::calculateOneIxn(int ii, int jj, float* forces, double* totalEnergy, const fvec4& boxSize, const fvec4& invBoxSize) {
     // get deltaR, R2, and R between 2 atoms
 
+    float A = 1017353.74195f;
+    float b = 37.8814401176f;
+    float c6 = 0.0026399910f;
+    float c8 = 0.0001937841f;
+    float c10 = 0.0000166944f;
+    c10 = 0.0f;
+
     fvec4 deltaR;
     fvec4 posI(posq+4*ii);
     fvec4 posJ(posq+4*jj);
@@ -532,16 +539,56 @@ void CpuNonbondedForce::calculateOneIxn(int ii, int jj, float* forces, double* t
     float sig2      = inverseR*sig;
     sig2     *= sig2;
     float sig6      = sig2*sig2*sig2;
-
     float eps       = atomParameters[ii].second*atomParameters[jj].second;
-    float dEdR      = switchValue*eps*(12.0f*sig6 - 6.0f)*sig6;
+    
+    // LJ
+    // float dEdR      = switchValue*eps*(12.0f*sig6 - 6.0f)*sig6;
+
+    // LJ-Buck
+    // float dEdR      = eps*(12.0f*sig6*sig6);
+
+    // BUCK
+    float dEdR = 0;
+
+    // SHARED
+    float inverseR2 = inverseR * inverseR;
+    float inverseR6 = inverseR2 * inverseR2 * inverseR2;
+    c6 *= inverseR6;
+    c8 *= inverseR6 * inverseR2;
+    c10 *= inverseR6 * inverseR2 * inverseR2;
+
+    if (eps != 0.0f) {
+        // BUCK
+        dEdR       = A*b*exp(-b*r);
+        
+        dEdR      += -6.0f*c6-8.0f*c8-10.0f*c10;
+        dEdR      *= switchValue;
+    }
+    // END SHARED
+
     float chargeProd = ONE_4PI_EPS0*posq[4*ii+3]*posq[4*jj+3];
+
     if (cutoff)
         dEdR += (float) (chargeProd*(inverseR-2.0f*krf*r2));
     else
         dEdR += (float) (chargeProd*inverseR);
     dEdR *= inverseR*inverseR;
-    float energy = eps*(sig6-1.0f)*sig6;
+
+    // LJ
+    // float energy = eps*(sig6-1.0f)*sig6;
+    
+    // LJ-Buck
+    // float energy = eps*sig6*sig6;
+
+    // BUCK
+    float energy = 0;
+    if (eps != 0.0f) {
+        // BUCK
+        energy       = A*exp(-b*r);
+
+        energy      += -c6-c8-c10;
+    }
+
     if (useSwitch) {
         dEdR -= energy*switchDeriv*inverseR;
         energy *= switchValue;

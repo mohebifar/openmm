@@ -2271,10 +2271,11 @@ class NonbondedGenerator(object):
 
     SCALETOL = 1e-5
 
-    def __init__(self, forcefield, coulomb14scale, lj14scale):
+    def __init__(self, forcefield, coulomb14scale, lj14scale, method='lennardJones'):
         self.ff = forcefield
         self.coulomb14scale = coulomb14scale
         self.lj14scale = lj14scale
+        self.method = method
         self.params = ForceField._AtomTypeParameters(forcefield, 'NonbondedForce', 'Atom', ('charge', 'sigma', 'epsilon'))
 
     def registerAtom(self, parameters):
@@ -2284,7 +2285,7 @@ class NonbondedGenerator(object):
     def parseElement(element, ff):
         existing = [f for f in ff._forces if isinstance(f, NonbondedGenerator)]
         if len(existing) == 0:
-            generator = NonbondedGenerator(ff, float(element.attrib['coulomb14scale']), float(element.attrib['lj14scale']))
+            generator = NonbondedGenerator(ff, float(element.attrib['coulomb14scale']), float(element.attrib['lj14scale']), element.attrib['method'])
             ff.registerGenerator(generator)
         else:
             # Multiple <NonbondedForce> tags were found, probably in different files.  Simply add more types to the existing one.
@@ -2333,7 +2334,7 @@ class LennardJonesGenerator(object):
         self.ff = forcefield
         self.nbfixTypes = {}
         self.lj14scale = lj14scale
-        self.ljTypes = ForceField._AtomTypeParameters(forcefield, 'LennardJonesForce', 'Atom', ('sigma', 'epsilon'))
+        self.ljTypes = ForceField._AtomTypeParameters(forcefield, 'LennardJonesForce', 'Atom', ('sigma', 'epsilon', 'c6', 'c8', 'c10', 'c12'))
 
     def registerNBFIX(self, parameters):
         types = self.ff._findAtomTypes(parameters, 2)

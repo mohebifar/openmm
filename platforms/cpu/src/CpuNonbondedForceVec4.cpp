@@ -1,4 +1,3 @@
-
 /* Portions copyright (c) 2006-2015 Stanford University and Simbios.
  * Contributors: Pande Group
  *
@@ -50,7 +49,7 @@ enum PeriodicType {NoPeriodic, PeriodicPerAtom, PeriodicPerInteraction, Periodic
 
 void CpuNonbondedForceVec4::calculateBlockIxn(int blockIndex, float* forces, double* totalEnergy, const fvec4& boxSize, const fvec4& invBoxSize) {
     // Determine whether we need to apply periodic boundary conditions.
-    
+
     PeriodicType periodicType;
     fvec4 blockCenter;
     if (!periodic) {
@@ -84,9 +83,9 @@ void CpuNonbondedForceVec4::calculateBlockIxn(int blockIndex, float* forces, dou
         else
             periodicType = PeriodicPerInteraction;
     }
-    
+
     // Call the appropriate version depending on what calculation is required for periodic boundary conditions.
-    
+
     if (periodicType == NoPeriodic)
         calculateBlockIxnImpl<NoPeriodic>(blockIndex, forces, totalEnergy, boxSize, invBoxSize, blockCenter);
     else if (periodicType == PeriodicPerAtom)
@@ -100,7 +99,12 @@ void CpuNonbondedForceVec4::calculateBlockIxn(int blockIndex, float* forces, dou
 template <int PERIODIC_TYPE>
 void CpuNonbondedForceVec4::calculateBlockIxnImpl(int blockIndex, float* forces, double* totalEnergy, const fvec4& boxSize, const fvec4& invBoxSize, const fvec4& blockCenter) {
     // Load the positions and parameters of the atoms in the block.
-    
+    float c12 = 0.0035000509f;
+    float c6 = 0.0026399910f;
+    float c8 = 0.0001937841f;
+    float c10 = 0.0000166944f;
+    c10 = 0.0f;
+
     const int* blockAtom = &neighborList->getSortedAtoms()[4*blockIndex];
     fvec4 blockAtomPosq[4];
     fvec4 blockAtomForceX(0.0f), blockAtomForceY(0.0f), blockAtomForceZ(0.0f);
@@ -117,18 +121,18 @@ void CpuNonbondedForceVec4::calculateBlockIxnImpl(int blockIndex, float* forces,
     fvec4 blockAtomEpsilon(atomParameters[blockAtom[0]].second, atomParameters[blockAtom[1]].second, atomParameters[blockAtom[2]].second, atomParameters[blockAtom[3]].second);
     const bool needPeriodic = (PERIODIC_TYPE == PeriodicPerInteraction || PERIODIC_TYPE == PeriodicTriclinic);
     const float invSwitchingInterval = 1/(cutoffDistance-switchingDistance);
-    
+
     // Loop over neighbors for this block.
-    
+
     const vector<int>& neighbors = neighborList->getBlockNeighbors(blockIndex);
     const vector<char>& exclusions = neighborList->getBlockExclusions(blockIndex);
     for (int i = 0; i < (int) neighbors.size(); i++) {
         // Load the next neighbor.
-        
+
         int atom = neighbors[i];
-        
+
         // Compute the distances to the block atoms.
-        
+
         fvec4 dx, dy, dz, r2;
         fvec4 atomPos(posq+4*atom);
         if (PERIODIC_TYPE == PeriodicPerAtom)
@@ -143,20 +147,35 @@ void CpuNonbondedForceVec4::calculateBlockIxnImpl(int blockIndex, float* forces,
         include = include & (r2 < cutoffDistance*cutoffDistance);
         if (!any(include))
             continue; // No interactions to compute.
-        
+
         // Compute the interactions.
-        
+
         fvec4 inverseR = rsqrt(r2);
+
+        // BUCK-C12
+        fvec4 inverseR2 = inverseR * inverseR;
+        fvec4 inverseR6 = inverseR2 * inverseR2 * inverseR2;
+        fvec4 _c12 = c12 * inverseR6*inverseR6;
+        fvec4 _c6 = c6 * inverseR6;
+        fvec4 _c8 = c8 * inverseR6 * inverseR2;
+        fvec4 _c10 = c10 * inverseR6 * inverseR2 * inverseR2;
+
         fvec4 energy, dEdR;
         float atomEpsilon = atomParameters[atom].second;
         if (atomEpsilon != 0.0f) {
-            fvec4 sig = blockAtomSigma+atomParameters[atom].first;
-            fvec4 sig2 = inverseR*sig;
-            sig2 *= sig2;
-            fvec4 sig6 = sig2*sig2*sig2;
-            fvec4 epsSig6 = blockAtomEpsilon*atomEpsilon*sig6;
-            dEdR = epsSig6*(12.0f*sig6 - 6.0f);
-            energy = epsSig6*(sig6-1.0f);
+            // fvec4 sig = blockAtomSigma+atomParameters[atom].first;
+            // fvec4 sig2 = inverseR*sig;
+            // sig2 *= sig2;
+            // fvec4 sig6 = sig2*sig2*sig2;
+            // fvec4 epsSig6 = blockAtomEpsilon*atomEpsilon*sig6;
+            // dEdR = epsSig6*(12.0f*sig6 - 6.0f);
+            // energy = epsSig6*(sig6-1.0f);
+
+            fvec4 waterOSwitch = blockAtomEpsilon*atomEpsilon;
+            // std::cout << "SWITCH: " << waterOSwitch[0] << " " << waterOSwitch[1] << " " << waterOSwitch[2] << " " << waterOSwitch[3]  << std::endl;
+            dEdR = waterOSwitch * (12.0f * _c12 - 6.0f * _c6 - 8.0f * _c8 - 10.0f * _c10);
+            energy = waterOSwitch * (_c12 - _c6 - _c8 - _c10);
+
             if (useSwitch) {
                 fvec4 r = r2*inverseR;
                 fvec4 t = blend(0.0f, (r-switchingDistance)*invSwitchingInterval, r>switchingDistance);
@@ -203,7 +222,7 @@ void CpuNonbondedForceVec4::calculateBlockIxnImpl(int blockIndex, float* forces,
         atomForce[1] -= dot4(fy, one);
         atomForce[2] -= dot4(fz, one);
     }
-    
+
     // Record the forces on the block atoms.
 
     fvec4 f[4] = {blockAtomForceX, blockAtomForceY, blockAtomForceZ, 0.0f};
@@ -247,9 +266,9 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxn(int blockIndex, float* forces
         else
             periodicType = PeriodicPerInteraction;
     }
-    
+
     // Call the appropriate version depending on what calculation is required for periodic boundary conditions.
-    
+
     if (periodicType == NoPeriodic)
         calculateBlockEwaldIxnImpl<NoPeriodic>(blockIndex, forces, totalEnergy, boxSize, invBoxSize, blockCenter);
     else if (periodicType == PeriodicPerAtom)
@@ -262,6 +281,13 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxn(int blockIndex, float* forces
 
 template <int PERIODIC_TYPE>
 void CpuNonbondedForceVec4::calculateBlockEwaldIxnImpl(int blockIndex, float* forces, double* totalEnergy, const fvec4& boxSize, const fvec4& invBoxSize, const fvec4& blockCenter) {
+    float c12 = 4.696188795608e-06f;
+    float c6 = 0.0026399910f;
+    float c8 = 0.0001937841f;
+    float c10 = 0.0000166944f;
+    c10 = 0.0f;
+
+
     // Load the positions and parameters of the atoms in the block.
     const int* blockAtom = &neighborList->getSortedAtoms()[4*blockIndex];
     fvec4 blockAtomPosq[4];
@@ -282,16 +308,16 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
     const float invSwitchingInterval = 1/(cutoffDistance-switchingDistance);
 
     // Loop over neighbors for this block.
-    
+
     const vector<int>& neighbors = neighborList->getBlockNeighbors(blockIndex);
     const vector<char>& exclusions = neighborList->getBlockExclusions(blockIndex);
     for (int i = 0; i < (int) neighbors.size(); i++) {
         // Load the next neighbor.
-        
+
         int atom = neighbors[i];
-        
+
         // Compute the distances to the block atoms.
-        
+
         fvec4 dx, dy, dz, r2;
         fvec4 atomPos(posq+4*atom);
         if (PERIODIC_TYPE == PeriodicPerAtom)
@@ -306,22 +332,41 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
         include = include & (r2 < cutoffDistance*cutoffDistance);
         if (!any(include))
             continue; // No interactions to compute.
-        
+
         // Compute the interactions.
-        
+
         fvec4 inverseR = rsqrt(r2);
+
+        // BUCK-C12
+        fvec4 inverseR2 = inverseR * inverseR;
+        fvec4 inverseR6 = inverseR2 * inverseR2 * inverseR2;
+        fvec4 _c12 = c12 * inverseR6*inverseR6;
+        fvec4 _c6 = c6 * inverseR6;
+        fvec4 _c8 = c8 * inverseR6 * inverseR2;
+        fvec4 _c10 = c10 * inverseR6 * inverseR2 * inverseR2;
+
         fvec4 r = r2*inverseR;
         fvec4 energy, dEdR;
         float atomEpsilon = atomParameters[atom].second;
         if (atomEpsilon != 0.0f) {
-            fvec4 sig = blockAtomSigma+atomParameters[atom].first;
-            fvec4 sig2 = inverseR*sig;
-            sig2 *= sig2;
-            fvec4 sig6 = sig2*sig2*sig2;
-            fvec4 eps = blockAtomEpsilon*atomEpsilon;
-            fvec4 epsSig6 = eps*sig6;
-            dEdR = epsSig6*(12.0f*sig6 - 6.0f);
-            energy = epsSig6*(sig6-1.0f);
+            // fvec4 sig = blockAtomSigma+atomParameters[atom].first;
+            // fvec4 sig2 = inverseR*sig;
+            // sig2 *= sig2;
+            // fvec4 sig6 = sig2*sig2*sig2;
+            // fvec4 eps = blockAtomEpsilon*atomEpsilon;
+            // fvec4 epsSig6 = eps*sig6;
+            // dEdR = epsSig6*(12.0f*sig6 - 6.0f);
+            // energy = epsSig6*(sig6-1.0f);
+
+            fvec4 ss = 12.0f * _c12 - 6.0f * _c6 - 8.0f * _c8 - 10.0f * _c10;
+            fvec4 waterOSwitch = blockAtomEpsilon*atomEpsilon;
+            dEdR = waterOSwitch * (12.0f * _c12 - 6.0f * _c6 - 8.0f * _c8 - 10.0f * _c10);
+            energy = waterOSwitch * (_c12 - _c6 - _c8 - _c10);
+            // std::cout << "EPS: " << atomEpsilon << std::endl;
+            // std::cout << "SWITCH: " << waterOSwitch[0] << " " << waterOSwitch[1] << " " << waterOSwitch[2] << " " << waterOSwitch[3]  << std::endl;
+            // std::cout << "SWITCH dEdR: " << dEdR[0] << " " << dEdR[1] << " " << dEdR[2] << " " << dEdR[3]  << std::endl;
+            // std::cout << "SWITCH dEdR: " << ss[0] << " " << ss[1] << " " << ss[2] << " " << ss[3]  << std::endl;
+
             if (useSwitch) {
                 fvec4 t = blend(0.0f, (r-switchingDistance)*invSwitchingInterval, r>switchingDistance);
                 fvec4 switchValue = 1+t*t*t*(-10.0f+t*(15.0f-t*6.0f));
@@ -331,14 +376,16 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
             }
 
             if (ljpme) {
-                fvec4 C6ij = C6s*C6params[atom];
+                // fvec4 C6ij = C6s*C6params[atom];
+                fvec4 C6ij = waterOSwitch*c6;
                 fvec4 inverseR2 = inverseR*inverseR;
-                fvec4 mysig2 = sig*sig;
-                fvec4 mysig6 = mysig2*mysig2*mysig2;
+                // fvec4 mysig2 = sig*sig;
+                // fvec4 mysig6 = mysig2*mysig2*mysig2;
                 fvec4 emult = C6ij*inverseR2*inverseR2*inverseR2*exptermsApprox(r);
-                fvec4 potentialShift = eps*(1.0f-mysig6*inverseRcut6)*mysig6*inverseRcut6 - C6ij*inverseRcut6Expterm;
+                // fvec4 potentialShift = eps*(1.0f-mysig6*inverseRcut6)*mysig6*inverseRcut6 - C6ij*inverseRcut6Expterm;
+                // fvec4 potentialShift = waterOSwitch * (c12 * inverseRcut6 * inverseRcut6 + c6 * inverseRcut6 - C6ij*inverseRcut6Expterm);
                 dEdR += 6.0f*C6ij*inverseR2*inverseR2*inverseR2*dExptermsApprox(r);
-                energy += emult + potentialShift;
+                energy += emult/* + potentialShift*/;
             }
         }
         else {
@@ -347,7 +394,7 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
         }
         fvec4 chargeProd = blockAtomCharge*posq[4*atom+3];
         dEdR += chargeProd*inverseR*ewaldScaleFunction(r);
-        dEdR *= inverseR*inverseR;        
+        dEdR *= inverseR*inverseR;
 
         // Accumulate energies.
 
@@ -372,7 +419,7 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
         atomForce[1] -= dot4(fy, one);
         atomForce[2] -= dot4(fz, one);
     }
-    
+
     // Record the forces on the block atoms.
 
     fvec4 f[4] = {blockAtomForceX, blockAtomForceY, blockAtomForceZ, 0.0f};
@@ -458,4 +505,3 @@ fvec4 CpuNonbondedForceVec4::dExptermsApprox(const fvec4& r) {
     transpose(t1, t2, t3, t4);
     return coeff1*t1 + coeff2*t2;
 }
-

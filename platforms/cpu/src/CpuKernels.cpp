@@ -559,8 +559,8 @@ void CpuCalcNonbondedForceKernel::initialize(const System& system, const Nonbond
     C6params.resize(numParticles);
     double sumSquaredCharges = 0.0;
     for (int i = 0; i < numParticles; ++i) {
-        double charge, radius, depth;
-        force.getParticleParameters(i, charge, radius, depth);
+        double charge, radius, depth, c6, c8, c10, c12;
+        force.getParticleParameters(i, charge, radius, depth, c6, c8, c10, c12);
         data.posq[4*i+3] = (float) charge;
         particleParams[i] = make_pair((float) (0.5*radius), (float) (2.0*sqrt(depth)));
         C6params[i] = 8.0*pow(particleParams[i].first, 3.0) * particleParams[i].second;
