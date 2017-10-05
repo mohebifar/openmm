@@ -277,6 +277,9 @@ private:
     std::vector<std::set<int> > exclusions;
     std::vector<std::pair<float, float> > particleParams;
     std::vector<float> C6params;
+    std::vector<float> C8params;
+    std::vector<float> C10params;
+    std::vector<float> C12params;
     NonbondedMethod nonbondedMethod;
     CpuNonbondedForce* nonbonded;
     Kernel optimizedPme, optimizedDispersionPme;

@@ -143,7 +143,12 @@ int NonbondedForce::addParticle(double charge, double sigma, double epsilon) {
     return particles.size()-1;
 }
 
-void NonbondedForce::getParticleParameters(int index, double& charge, double& sigma, double& epsilon, double& c6, double& c8, double& c10, double& c12) const {
+int NonbondedForce::addParticleDisp(double charge, double sigma, double epsilon, double c6 = 0.0, double c8 = 0.0, double c10 = 0.0, double c12 = 0.0) {
+    particles.push_back(ParticleInfo(charge, sigma, epsilon, c6, c8, c10, c12));
+    return particles.size()-1;
+}
+
+void NonbondedForce::getParticleParametersDisp(int index, double& charge, double& sigma, double& epsilon, double& c6 = *(double*) NULL, double& c8 = *(double*) NULL, double& c10 = *(double*) NULL, double& c12 = *(double*) NULL) const {
     ASSERT_VALID_INDEX(index, particles);
     charge = particles[index].charge;
     sigma = particles[index].sigma;
@@ -152,6 +157,24 @@ void NonbondedForce::getParticleParameters(int index, double& charge, double& si
     c8 = particles[index].c8;
     c10 = particles[index].c10;
     c12 = particles[index].c12;
+}
+
+void NonbondedForce::setParticleParametersDisp(int index, double charge, double sigma, double epsilon, double c6 = 0.0, double c8 = 0.0, double c10 = 0.0, double c12 = 0.0) {
+    ASSERT_VALID_INDEX(index, particles);
+    particles[index].charge = charge;
+    particles[index].sigma = sigma;
+    particles[index].epsilon = epsilon;
+    particles[index].c6 = c6;
+    particles[index].c8 = c8;
+    particles[index].c10 = c10;
+    particles[index].c12 = c12;
+}
+
+void NonbondedForce::getParticleParameters(int index, double& charge, double& sigma, double& epsilon) const {
+    ASSERT_VALID_INDEX(index, particles);
+    charge = particles[index].charge;
+    sigma = particles[index].sigma;
+    epsilon = particles[index].epsilon;
 }
 
 void NonbondedForce::setParticleParameters(int index, double charge, double sigma, double epsilon) {

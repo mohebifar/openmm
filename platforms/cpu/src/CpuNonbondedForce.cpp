@@ -377,7 +377,7 @@ void CpuNonbondedForce::calculateReciprocalIxn(int numberOfAtoms, float* posq, c
 
 
 void CpuNonbondedForce::calculateDirectIxn(int numberOfAtoms, float* posq, const vector<Vec3>& atomCoordinates, const vector<pair<float, float> >& atomParameters,
-                                           const vector<float>& C6params, const vector<set<int> >& exclusions, vector<AlignedArray<float> >& threadForce, double* totalEnergy, ThreadPool& threads) {
+    const vector<float>& C6params, const vector<float>& C8params, const vector<float>& C10params, const vector<float>& C12params, const vector<set<int> >& exclusions, vector<AlignedArray<float> >& threadForce, double* totalEnergy, ThreadPool& threads) {
     // Record the parameters for the threads.
     
     this->numberOfAtoms = numberOfAtoms;
@@ -385,6 +385,9 @@ void CpuNonbondedForce::calculateDirectIxn(int numberOfAtoms, float* posq, const
     this->atomCoordinates = &atomCoordinates[0];
     this->atomParameters = &atomParameters[0];
     this->C6params = &C6params[0];
+    this->C8params = &C8params[0];
+    this->C10params = &C10params[0];
+    this->C12params = &C12params[0];
     this->exclusions = &exclusions[0];
     this->threadForce = &threadForce;
     includeEnergy = (totalEnergy != NULL);

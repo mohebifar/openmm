@@ -304,6 +304,10 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
     fvec4 blockAtomSigma(atomParameters[blockAtom[0]].first, atomParameters[blockAtom[1]].first, atomParameters[blockAtom[2]].first, atomParameters[blockAtom[3]].first);
     fvec4 blockAtomEpsilon(atomParameters[blockAtom[0]].second, atomParameters[blockAtom[1]].second, atomParameters[blockAtom[2]].second, atomParameters[blockAtom[3]].second);
     fvec4 C6s(C6params[blockAtom[0]], C6params[blockAtom[1]], C6params[blockAtom[2]], C6params[blockAtom[3]]);
+    fvec4 C8s(C8params[blockAtom[0]], C8params[blockAtom[1]], C8params[blockAtom[2]], C8params[blockAtom[3]]);
+    fvec4 C10s(C10params[blockAtom[0]], C10params[blockAtom[1]], C10params[blockAtom[2]], C10params[blockAtom[3]]);
+    fvec4 C12s(C12params[blockAtom[0]], C12params[blockAtom[1]], C12params[blockAtom[2]], C12params[blockAtom[3]]);
+
     const bool needPeriodic = (PERIODIC_TYPE == PeriodicPerInteraction || PERIODIC_TYPE == PeriodicTriclinic);
     const float invSwitchingInterval = 1/(cutoffDistance-switchingDistance);
 
@@ -340,15 +344,19 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
         // BUCK-C12
         fvec4 inverseR2 = inverseR * inverseR;
         fvec4 inverseR6 = inverseR2 * inverseR2 * inverseR2;
-        fvec4 _c12 = c12 * inverseR6*inverseR6;
-        fvec4 _c6 = c6 * inverseR6;
-        fvec4 _c8 = c8 * inverseR6 * inverseR2;
-        fvec4 _c10 = c10 * inverseR6 * inverseR2 * inverseR2;
 
         fvec4 r = r2*inverseR;
         fvec4 energy, dEdR;
-        float atomEpsilon = atomParameters[atom].second;
-        if (atomEpsilon != 0.0f) {
+        // float atomEpsilon = atomParameters[atom].second;
+        float atomC6 = C6params[atom];
+        float atomC8 = C8params[atom];
+        float atomC10 = C10params[atom];
+        float atomC12 = C12params[atom];
+        fvec4 _c12 = atomC6 * inverseR6*inverseR6;
+        fvec4 _c6 = atomC8 * inverseR6;
+        fvec4 _c8 = atomC10 * inverseR6 * inverseR2;
+        fvec4 _c10 = atomC12 * inverseR6 * inverseR2 * inverseR2;
+        // if (atomEpsilon != 0.0f) {
             // fvec4 sig = blockAtomSigma+atomParameters[atom].first;
             // fvec4 sig2 = inverseR*sig;
             // sig2 *= sig2;
@@ -358,14 +366,17 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
             // dEdR = epsSig6*(12.0f*sig6 - 6.0f);
             // energy = epsSig6*(sig6-1.0f);
 
-            fvec4 ss = 12.0f * _c12 - 6.0f * _c6 - 8.0f * _c8 - 10.0f * _c10;
-            fvec4 waterOSwitch = blockAtomEpsilon*atomEpsilon;
-            dEdR = waterOSwitch * (12.0f * _c12 - 6.0f * _c6 - 8.0f * _c8 - 10.0f * _c10);
-            energy = waterOSwitch * (_c12 - _c6 - _c8 - _c10);
+            // fvec4 ss = 12.0f * _c12 - 6.0f * _c6 - 8.0f * _c8 - 10.0f * _c10;
+            // fvec4 waterOSwitch = blockAtomEpsilon*atomEpsilon;
+            dEdR = 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
+            energy = (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
+
             // std::cout << "EPS: " << atomEpsilon << std::endl;
             // std::cout << "SWITCH: " << waterOSwitch[0] << " " << waterOSwitch[1] << " " << waterOSwitch[2] << " " << waterOSwitch[3]  << std::endl;
             // std::cout << "SWITCH dEdR: " << dEdR[0] << " " << dEdR[1] << " " << dEdR[2] << " " << dEdR[3]  << std::endl;
             // std::cout << "SWITCH dEdR: " << ss[0] << " " << ss[1] << " " << ss[2] << " " << ss[3]  << std::endl;
+            // std::cout << "C6: " << C6s[0] << " " << C6s[1] << " " << C6s[2] << " " << C6s[3]  << std::endl;
+            // std::cout << "C12: " << C12s[0] << " " << C12s[1] << " " << C12s[2] << " " << C12s[3]  << std::endl;
 
             if (useSwitch) {
                 fvec4 t = blend(0.0f, (r-switchingDistance)*invSwitchingInterval, r>switchingDistance);
@@ -376,8 +387,8 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
             }
 
             if (ljpme) {
-                // fvec4 C6ij = C6s*C6params[atom];
-                fvec4 C6ij = waterOSwitch*c6;
+                fvec4 C6ij = C6s*C6params[atom];
+                // fvec4 C6ij = waterOSwitch*c6;
                 fvec4 inverseR2 = inverseR*inverseR;
                 // fvec4 mysig2 = sig*sig;
                 // fvec4 mysig6 = mysig2*mysig2*mysig2;
@@ -387,11 +398,11 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
                 dEdR += 6.0f*C6ij*inverseR2*inverseR2*inverseR2*dExptermsApprox(r);
                 energy += emult/* + potentialShift*/;
             }
-        }
-        else {
-            energy = 0.0f;
-            dEdR = 0.0f;
-        }
+        // }
+        // else {
+        //     energy = 0.0f;
+        //     dEdR = 0.0f;
+        // }
         fvec4 chargeProd = blockAtomCharge*posq[4*atom+3];
         dEdR += chargeProd*inverseR*ewaldScaleFunction(r);
         dEdR *= inverseR*inverseR;

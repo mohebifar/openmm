@@ -420,7 +420,12 @@ UNITS = {
            'unit.nanometer', 'unit.kilojoule_per_mole')),
 ("NonbondedForce", "getParticleParameters")
  : (None, ('unit.elementary_charge',
-           'unit.nanometer', 'unit.kilojoule_per_mole')),
+           'unit.nanometer', 'unit.kilojoule_per_mole',
+            'unit.kilojoule_per_mole*unit.nanometer**-6',
+            'unit.kilojoule_per_mole*unit.nanometer**-8',
+            'unit.kilojoule_per_mole*unit.nanometer**-10',
+            'unit.kilojoule_per_mole*unit.nanometer**-12'
+            )),
 ("PeriodicTorsionForce", "getTorsionParameters")
  : (None, (None, None, None, None,
            None, 'unit.radian', 'unit.kilojoule_per_mole')),
