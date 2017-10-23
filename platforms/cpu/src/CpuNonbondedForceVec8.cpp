@@ -309,6 +309,9 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
     fvec8 blockAtomSigma(atomParameters[blockAtom[0]].first, atomParameters[blockAtom[1]].first, atomParameters[blockAtom[2]].first, atomParameters[blockAtom[3]].first, atomParameters[blockAtom[4]].first, atomParameters[blockAtom[5]].first, atomParameters[blockAtom[6]].first, atomParameters[blockAtom[7]].first);
     fvec8 blockAtomEpsilon(atomParameters[blockAtom[0]].second, atomParameters[blockAtom[1]].second, atomParameters[blockAtom[2]].second, atomParameters[blockAtom[3]].second, atomParameters[blockAtom[4]].second, atomParameters[blockAtom[5]].second, atomParameters[blockAtom[6]].second, atomParameters[blockAtom[7]].second);
     fvec8 C6s(C6params[blockAtom[0]], C6params[blockAtom[1]], C6params[blockAtom[2]], C6params[blockAtom[3]], C6params[blockAtom[4]], C6params[blockAtom[5]], C6params[blockAtom[6]], C6params[blockAtom[7]]);
+    fvec8 C8s(C8params[blockAtom[0]], C8params[blockAtom[1]], C8params[blockAtom[2]], C8params[blockAtom[3]], C8params[blockAtom[4]], C8params[blockAtom[5]], C8params[blockAtom[6]], C8params[blockAtom[7]]);
+    fvec8 C10s(C10params[blockAtom[0]], C10params[blockAtom[1]], C10params[blockAtom[2]], C10params[blockAtom[3]], C10params[blockAtom[4]], C10params[blockAtom[5]], C10params[blockAtom[6]], C10params[blockAtom[7]]);
+    fvec8 C12s(C12params[blockAtom[0]], C12params[blockAtom[1]], C12params[blockAtom[2]], C12params[blockAtom[3]], C12params[blockAtom[4]], C12params[blockAtom[5]], C12params[blockAtom[6]], C12params[blockAtom[7]]);
     const bool needPeriodic = (PERIODIC_TYPE == PeriodicPerInteraction || PERIODIC_TYPE == PeriodicTriclinic);
     const float invSwitchingInterval = 1/(cutoffDistance-switchingDistance);
     
@@ -341,18 +344,36 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
         // Compute the interactions.
         
         fvec8 inverseR = rsqrt(r2);
+        
+        // BUCK-C12
+        float atomC6 = C6params[atom];
+        float atomC8 = C8params[atom];
+        float atomC10 = C10params[atom];
+        float atomC12 = C12params[atom];
+        
+        fvec8 inverseR2 = inverseR * inverseR;
+        fvec8 inverseR6 = inverseR2 * inverseR2 * inverseR2;
+        
+        fvec8 _c12 = atomC6 * inverseR6*inverseR6;
+        fvec8 _c6 = atomC8 * inverseR6;
+        fvec8 _c8 = atomC10 * inverseR6 * inverseR2;
+        fvec8 _c10 = atomC12 * inverseR6 * inverseR2 * inverseR2;
+
         fvec8 r = r2*inverseR;
         fvec8 energy, dEdR;
-        float atomEpsilon = atomParameters[atom].second;
-        if (atomEpsilon != 0.0f) {
-            fvec8 sig = blockAtomSigma+atomParameters[atom].first;
-            fvec8 sig2 = inverseR*sig;
-            sig2 *= sig2;
-            fvec8 sig6 = sig2*sig2*sig2;
-            fvec8 eps = blockAtomEpsilon*atomEpsilon;
-            fvec8 epsSig6 = eps*sig6;
-            dEdR = epsSig6*(12.0f*sig6 - 6.0f);
-            energy = epsSig6*(sig6-1.0f);
+        // float atomEpsilon = atomParameters[atom].second;
+        // if (atomEpsilon != 0.0f) {
+        //     fvec8 sig = blockAtomSigma+atomParameters[atom].first;
+        //     fvec8 sig2 = inverseR*sig;
+        //     sig2 *= sig2;
+        //     fvec8 sig6 = sig2*sig2*sig2;
+        //     fvec8 eps = blockAtomEpsilon*atomEpsilon;
+        //     fvec8 epsSig6 = eps*sig6;
+            // dEdR = epsSig6*(12.0f*sig6 - 6.0f);
+            // energy = epsSig6*(sig6-1.0f);
+
+            dEdR = 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
+            energy = (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
             if (useSwitch) {
                 fvec8 t = (r>switchingDistance) & ((r-switchingDistance)*invSwitchingInterval);
                 fvec8 switchValue = 1+t*t*t*(-10.0f+t*(15.0f-t*6.0f));
@@ -363,19 +384,19 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
             if (ljpme) {
                 fvec8 C6ij = C6s*C6params[atom];
                 fvec8 inverseR2 = inverseR*inverseR;
-                fvec8 mysig2 = sig*sig;
-                fvec8 mysig6 = mysig2*mysig2*mysig2;
+                // fvec8 mysig2 = sig*sig;
+                // fvec8 mysig6 = mysig2*mysig2*mysig2;
                 fvec8 emult = C6ij*inverseR2*inverseR2*inverseR2*exptermsApprox(r);
-                fvec8 potentialShift = eps*(1.0f-mysig6*inverseRcut6)*mysig6*inverseRcut6 - C6ij*inverseRcut6Expterm;
+                // fvec8 potentialShift = eps*(1.0f-mysig6*inverseRcut6)*mysig6*inverseRcut6 - C6ij*inverseRcut6Expterm;
                 dEdR += 6.0f*C6ij*inverseR2*inverseR2*inverseR2*dExptermsApprox(r);
-                energy += emult + potentialShift;
+                energy += emult/* + potentialShift*/;
             }
 
-        }
-        else {
-            energy = 0.0f;
-            dEdR = 0.0f;
-        }
+        // }
+        // else {
+        //     energy = 0.0f;
+        //     dEdR = 0.0f;
+        // }
         fvec8 chargeProd = blockAtomCharge*posq[4*atom+3];
         dEdR += chargeProd*inverseR*ewaldScaleFunction(r);
         dEdR *= inverseR*inverseR;
