@@ -354,11 +354,11 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
         fvec8 inverseR2 = inverseR * inverseR;
         fvec8 inverseR6 = inverseR2 * inverseR2 * inverseR2;
         
-        fvec8 _c12 = atomC6 * inverseR6*inverseR6;
-        fvec8 _c6 = atomC8 * inverseR6;
-        fvec8 _c8 = atomC10 * inverseR6 * inverseR2;
-        fvec8 _c10 = atomC12 * inverseR6 * inverseR2 * inverseR2;
-
+        fvec8 _c6 = atomC6 * inverseR6;
+        fvec8 _c8 = atomC8 * inverseR6 * inverseR2;
+        fvec8 _c10 = atomC10 * inverseR6 * inverseR2 * inverseR2;
+        fvec8 _c12 = atomC12 * inverseR6*inverseR6;
+        
         fvec8 r = r2*inverseR;
         fvec8 energy, dEdR;
         // float atomEpsilon = atomParameters[atom].second;
@@ -372,8 +372,18 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
             // dEdR = epsSig6*(12.0f*sig6 - 6.0f);
             // energy = epsSig6*(sig6-1.0f);
 
+            // fvec8 t_dEdR = epsSig6*(12.0f*sig6 - 6.0f);
+            // fvec8 t_energy = epsSig6*(sig6-1.0f);
+
             dEdR = 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
             energy = (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
+
+            // float a = t_dEdR->val[0];
+            // float b = dEdR->val[0];
+            // float c = t_energy->val[0];
+            // float d = energy->val[0];
+            // std::cout << "dEdR " << a << " - " << b << " | E " << c << " - " << d << std::endl;
+
             if (useSwitch) {
                 fvec8 t = (r>switchingDistance) & ((r-switchingDistance)*invSwitchingInterval);
                 fvec8 switchValue = 1+t*t*t*(-10.0f+t*(15.0f-t*6.0f));

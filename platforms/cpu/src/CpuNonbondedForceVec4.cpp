@@ -352,10 +352,12 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
         float atomC8 = C8params[atom];
         float atomC10 = C10params[atom];
         float atomC12 = C12params[atom];
-        fvec4 _c12 = atomC6 * inverseR6*inverseR6;
-        fvec4 _c6 = atomC8 * inverseR6;
-        fvec4 _c8 = atomC10 * inverseR6 * inverseR2;
-        fvec4 _c10 = atomC12 * inverseR6 * inverseR2 * inverseR2;
+
+        fvec4 _c6 = atomC6 * inverseR6;
+        fvec4 _c8 = atomC8 * inverseR6 * inverseR2;
+        fvec4 _c10 = atomC10 * inverseR6 * inverseR2 * inverseR2;
+        fvec4 _c12 = atomC12 * inverseR6*inverseR6;
+
         // if (atomEpsilon != 0.0f) {
             // fvec4 sig = blockAtomSigma+atomParameters[atom].first;
             // fvec4 sig2 = inverseR*sig;
