@@ -516,12 +516,10 @@ void CpuNonbondedForce::threadComputeDirect(ThreadPool& threads, int threadIndex
 void CpuNonbondedForce::calculateOneIxn(int ii, int jj, float* forces, double* totalEnergy, const fvec4& boxSize, const fvec4& invBoxSize) {
     // get deltaR, R2, and R between 2 atoms
 
-    float A = 1017353.74195f;
-    float b = 37.8814401176f;
-    float c6 = 0.0026399910f;
-    float c8 = 0.0001937841f;
-    float c10 = 0.0000166944f;
-    c10 = 0.0f;
+    float c6 = C6params[ii] * C6params[jj];
+    float c8 = C8params[ii] * C8params[jj];
+    float c10 = C10params[ii] * C10params[jj];
+    float c12 = C12params[ii] * C12params[jj];
 
     fvec4 deltaR;
     fvec4 posI(posq+4*ii);
@@ -538,11 +536,11 @@ void CpuNonbondedForce::calculateOneIxn(int ii, int jj, float* forces, double* t
         switchValue = 1+t*t*t*(-10+t*(15-t*6));
         switchDeriv = t*t*(-30+t*(60-t*30))/(cutoffDistance-switchingDistance);
     }
-    float sig       = atomParameters[ii].first + atomParameters[jj].first;
-    float sig2      = inverseR*sig;
-    sig2     *= sig2;
-    float sig6      = sig2*sig2*sig2;
-    float eps       = atomParameters[ii].second*atomParameters[jj].second;
+    // float sig       = atomParameters[ii].first + atomParameters[jj].first;
+    // float sig2      = inverseR*sig;
+    // sig2     *= sig2;
+    // float sig6      = sig2*sig2*sig2;
+    // float eps       = atomParameters[ii].second*atomParameters[jj].second;
     
     // LJ
     // float dEdR      = switchValue*eps*(12.0f*sig6 - 6.0f)*sig6;
@@ -560,13 +558,11 @@ void CpuNonbondedForce::calculateOneIxn(int ii, int jj, float* forces, double* t
     c8 *= inverseR6 * inverseR2;
     c10 *= inverseR6 * inverseR2 * inverseR2;
 
-    if (eps != 0.0f) {
-        // BUCK
-        dEdR       = A*b*exp(-b*r);
-        
-        dEdR      += -6.0f*c6-8.0f*c8-10.0f*c10;
-        dEdR      *= switchValue;
-    }
+    // BUCK
+    // dEdR       = A*b*exp(-b*r);
+    dEdR       = c12;
+    dEdR      += -6.0f*c6-8.0f*c8-10.0f*c10;
+    dEdR      *= switchValue;
     // END SHARED
 
     float chargeProd = ONE_4PI_EPS0*posq[4*ii+3]*posq[4*jj+3];
@@ -585,12 +581,12 @@ void CpuNonbondedForce::calculateOneIxn(int ii, int jj, float* forces, double* t
 
     // BUCK
     float energy = 0;
-    if (eps != 0.0f) {
-        // BUCK
-        energy       = A*exp(-b*r);
-
-        energy      += -c6-c8-c10;
-    }
+    // if (eps != 0.0f) {
+    // BUCK
+    // energy       = A*exp(-b*r);
+    energy       = c12;
+    energy      += -c6-c8-c10;
+    // }
 
     if (useSwitch) {
         dEdR -= energy*switchDeriv*inverseR;
