@@ -557,6 +557,7 @@ void CpuNonbondedForce::calculateOneIxn(int ii, int jj, float* forces, double* t
     c6 *= inverseR6;
     c8 *= inverseR6 * inverseR2;
     c10 *= inverseR6 * inverseR2 * inverseR2;
+    c12 *= inverseR6 * inverseR6;
 
     // BUCK
     // dEdR       = A*b*exp(-b*r);
