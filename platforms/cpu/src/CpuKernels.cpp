@@ -734,10 +734,14 @@ void CpuCalcNonbondedForceKernel::copyParametersToContext(ContextImpl& context, 
 
     double sumSquaredCharges = 0.0;
     for (int i = 0; i < numParticles; ++i) {
-        double charge, radius, depth;
-        force.getParticleParameters(i, charge, radius, depth);
+        double charge, radius, depth, c6, c8, c10, c12;
+        force.getParticleParametersDisp(i, charge, radius, depth, c6, c8, c10, c12);
         data.posq[4*i+3] = (float) charge;
         particleParams[i] = make_pair((float) (0.5*radius), (float) (2.0*sqrt(depth)));
+        C6params[i] = sqrt(c6);
+        C8params[i] = sqrt(c8);
+        C10params[i] = sqrt(c10);
+        C12params[i] = sqrt(c12);
         sumSquaredCharges += charge*charge;
     }
     if (nonbondedMethod == Ewald || nonbondedMethod == PME)
