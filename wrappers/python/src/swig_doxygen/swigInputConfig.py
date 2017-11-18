@@ -424,7 +424,9 @@ UNITS = {
             'unit.kilojoule_per_mole*unit.nanometer**-6',
             'unit.kilojoule_per_mole*unit.nanometer**-8',
             'unit.kilojoule_per_mole*unit.nanometer**-10',
-            'unit.kilojoule_per_mole*unit.nanometer**-12'
+            'unit.kilojoule_per_mole*unit.nanometer**-12',
+            'unit.kilojoule_per_mole',
+            'unit.nanometer'
             )),
 ("PeriodicTorsionForce", "getTorsionParameters")
  : (None, (None, None, None, None,

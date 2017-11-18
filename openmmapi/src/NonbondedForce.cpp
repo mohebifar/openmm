@@ -144,7 +144,7 @@ int NonbondedForce::addParticle(double charge, double sigma, double epsilon) {
 }
 
 int NonbondedForce::addParticleDisp(double charge, double sigma, double epsilon, double c6 = 0.0, double c8 = 0.0, double c10 = 0.0, double c12 = 0.0, double a = 0.0, double b = 0.0) {
-    particles.push_back(ParticleInfo(charge, sigma, epsilon, c6, c8, c10, c12));
+    particles.push_back(ParticleInfo(charge, sigma, epsilon, c6, c8, c10, c12, a, b));
     return particles.size()-1;
 }
 

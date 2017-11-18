@@ -294,6 +294,8 @@ public:
     * @param c8        the C8 coefficient
     * @param c10       the C10 coefficient
     * @param c12       the C12 coefficient
+    * @param a         the a coefficient
+    * @param b         the b coefficient
     * @return the index of the particle that was added
     */
    int addParticleDisp(double charge, double sigma, double epsilon, double c6, double c8, double c10, double c12, double a, double b);
@@ -485,10 +487,10 @@ public:
         charge = sigma = epsilon = c6 = c8 = c10 = c12 = a = b = 0.0;
     }
     ParticleInfo(double charge, double sigma, double epsilon, double c6, double c8, double c10, double c12, double a, double b) :
-        charge(charge), sigma(sigma), epsilon(epsilon), c6(c6), c8(c8), c10(c10), c12(c12) a(a) b(b) {
+        charge(charge), sigma(sigma), epsilon(epsilon), c6(c6), c8(c8), c10(c10), c12(c12), a(a), b(b) {
     }
     ParticleInfo(double charge, double sigma, double epsilon) :
-        charge(charge), sigma(sigma), epsilon(epsilon), c6(0.0), c8(0.0), c10(0.0), c12(0.0) {
+        charge(charge), sigma(sigma), epsilon(epsilon), c6(0.0), c8(0.0), c10(0.0), c12(0.0), a(0.0), b(0.0) {
     }
 };
 

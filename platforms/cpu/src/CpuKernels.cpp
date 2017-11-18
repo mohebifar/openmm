@@ -564,7 +564,7 @@ void CpuCalcNonbondedForceKernel::initialize(const System& system, const Nonbond
     Bparams.resize(numParticles);
     double sumSquaredCharges = 0.0;
     for (int i = 0; i < numParticles; ++i) {
-        double charge, radius, depth, c6, c8, c10, c12;
+        double charge, radius, depth, c6, c8, c10, c12, a, b;
         force.getParticleParametersDisp(i, charge, radius, depth, c6, c8, c10, c12, a, b);
         data.posq[4*i+3] = (float) charge;
         particleParams[i] = make_pair((float) (0.5*radius), (float) (2.0*sqrt(depth)));
@@ -699,7 +699,7 @@ double CpuCalcNonbondedForceKernel::execute(ContextImpl& context, bool includeFo
     }
     double nonbondedEnergy = 0;
     if (includeDirect)
-        nonbonded->calculateDirectIxn(numParticles, &posq[0], posData, particleParams, C6params, C8params, C10params, C12params, exclusions, data.threadForce, includeEnergy ? &nonbondedEnergy : NULL, data.threads);
+        nonbonded->calculateDirectIxn(numParticles, &posq[0], posData, particleParams, C6params, C8params, C10params, C12params, Aparams, Bparams, exclusions, data.threadForce, includeEnergy ? &nonbondedEnergy : NULL, data.threads);
     if (includeReciprocal) {
         if (useOptimizedPme) {
             PmeIO io(&posq[0], &data.threadForce[0][0], numParticles);
