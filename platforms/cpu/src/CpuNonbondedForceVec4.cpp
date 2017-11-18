@@ -307,6 +307,8 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
     fvec4 C8s(C8params[blockAtom[0]], C8params[blockAtom[1]], C8params[blockAtom[2]], C8params[blockAtom[3]]);
     fvec4 C10s(C10params[blockAtom[0]], C10params[blockAtom[1]], C10params[blockAtom[2]], C10params[blockAtom[3]]);
     fvec4 C12s(C12params[blockAtom[0]], C12params[blockAtom[1]], C12params[blockAtom[2]], C12params[blockAtom[3]]);
+    fvec4 As(Aparams[blockAtom[0]], Aparams[blockAtom[1]], Aparams[blockAtom[2]], Aparams[blockAtom[3]]);
+    fvec4 Bs(Bparams[blockAtom[0]], Bparams[blockAtom[1]], Bparams[blockAtom[2]], Bparams[blockAtom[3]]);
 
     const bool needPeriodic = (PERIODIC_TYPE == PeriodicPerInteraction || PERIODIC_TYPE == PeriodicTriclinic);
     const float invSwitchingInterval = 1/(cutoffDistance-switchingDistance);
@@ -352,11 +354,17 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
         float atomC8 = C8params[atom];
         float atomC10 = C10params[atom];
         float atomC12 = C12params[atom];
+        float atomA = Aparams[atom];
+        float atomB = Bparams[atom];
 
         fvec4 _c6 = atomC6 * inverseR6;
         fvec4 _c8 = atomC8 * inverseR6 * inverseR2;
         fvec4 _c10 = atomC10 * inverseR6 * inverseR2 * inverseR2;
         fvec4 _c12 = atomC12 * inverseR6*inverseR6;
+
+        fvec4 buckRepulsionCombinedB = atomB * Bs;
+        fvec4 buckRepulsionExp = -1 * buckRepulsionCombinedB * r;
+        fvec4 buckRepulsion = atomA * As * exp(buckRepulsionExp);
 
         // if (atomEpsilon != 0.0f) {
             // fvec4 sig = blockAtomSigma+atomParameters[atom].first;
@@ -370,8 +378,8 @@ void CpuNonbondedForceVec4::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
 
             // fvec4 ss = 12.0f * _c12 - 6.0f * _c6 - 8.0f * _c8 - 10.0f * _c10;
             // fvec4 waterOSwitch = blockAtomEpsilon*atomEpsilon;
-            dEdR = 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
-            energy = (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
+            dEdR = buckRepulsionCombinedB * buckRepulsion + 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
+            energy = buckRepulsion + (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
 
             // std::cout << "EPS: " << atomEpsilon << std::endl;
             // std::cout << "SWITCH: " << waterOSwitch[0] << " " << waterOSwitch[1] << " " << waterOSwitch[2] << " " << waterOSwitch[3]  << std::endl;

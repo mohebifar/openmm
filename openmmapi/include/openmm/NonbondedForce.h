@@ -296,7 +296,7 @@ public:
     * @param c12       the C12 coefficient
     * @return the index of the particle that was added
     */
-   int addParticleDisp(double charge, double sigma, double epsilon, double c6, double c8, double c10, double c12);
+   int addParticleDisp(double charge, double sigma, double epsilon, double c6, double c8, double c10, double c12, double a, double b);
    /**
     * Get the nonbonded force parameters for a particle.
     *
@@ -308,8 +308,10 @@ public:
     * @param[out] c8        the C8 coefficient
     * @param[out] c10       the C10 coefficient
     * @param[out] c12       the C12 coefficient
+    * @param[out] a         the a coefficient
+    * @param[out] b         the b coefficient
     */
-   void getParticleParametersDisp(int index, double& charge, double& sigma, double& epsilon, double& c6, double& c8, double& c10, double& c12) const;
+   void getParticleParametersDisp(int index, double& charge, double& sigma, double& epsilon, double& c6, double& c8, double& c10, double& c12, double& a, double& b) const;
    /**
     * Get the nonbonded force parameters for a particle.
     *
@@ -321,8 +323,10 @@ public:
     * @param[out] c8        the C8 coefficient
     * @param[out] c10       the C10 coefficient
     * @param[out] c12       the C12 coefficient
+    * @param[out] a         the a coefficient
+    * @param[out] b         the b coefficient
     */
-   void setParticleParametersDisp(int index, double charge, double sigma, double epsilon, double c6, double c8, double c10, double c12);
+   void setParticleParametersDisp(int index, double charge, double sigma, double epsilon, double c6, double c8, double c10, double c12, double a, double b);
    /**
     * Get the nonbonded force parameters for a particle.
     *
@@ -476,12 +480,12 @@ private:
  */
 class NonbondedForce::ParticleInfo {
 public:
-    double charge, sigma, epsilon, c6, c8, c10, c12;
+    double charge, sigma, epsilon, c6, c8, c10, c12, a, b;
     ParticleInfo() {
-        charge = sigma = epsilon = c6 = c8 = c10 = c12 = 0.0;
+        charge = sigma = epsilon = c6 = c8 = c10 = c12 = a = b = 0.0;
     }
-    ParticleInfo(double charge, double sigma, double epsilon, double c6, double c8, double c10, double c12) :
-        charge(charge), sigma(sigma), epsilon(epsilon), c6(c6), c8(c8), c10(c10), c12(c12) {
+    ParticleInfo(double charge, double sigma, double epsilon, double c6, double c8, double c10, double c12, double a, double b) :
+        charge(charge), sigma(sigma), epsilon(epsilon), c6(c6), c8(c8), c10(c10), c12(c12) a(a) b(b) {
     }
     ParticleInfo(double charge, double sigma, double epsilon) :
         charge(charge), sigma(sigma), epsilon(epsilon), c6(0.0), c8(0.0), c10(0.0), c12(0.0) {

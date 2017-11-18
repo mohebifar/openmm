@@ -2276,7 +2276,7 @@ class NonbondedGenerator(object):
         self.coulomb14scale = coulomb14scale
         self.lj14scale = lj14scale
         self.method = method
-        self.params = ForceField._AtomTypeParameters(forcefield, 'NonbondedForce', 'Atom', ('charge', 'sigma', 'epsilon', 'c6', 'c8', 'c10', 'c12'))
+        self.params = ForceField._AtomTypeParameters(forcefield, 'NonbondedForce', 'Atom', ('charge', 'sigma', 'epsilon', 'c6', 'c8', 'c10', 'c12', 'a', 'b'))
 
     def registerAtom(self, parameters):
         self.params.registerAtom(parameters)
@@ -2307,7 +2307,7 @@ class NonbondedGenerator(object):
         force = mm.NonbondedForce()
         for atom in data.atoms:
             values = self.params.getAtomParameters(atom, data)
-            force.addParticleDisp(values[0], values[1], values[2], values[3], values[4], values[5], values[6])
+            force.addParticleDisp(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8])
         force.setNonbondedMethod(methodMap[nonbondedMethod])
         force.setCutoffDistance(nonbondedCutoff)
         if 'ewaldErrorTolerance' in args:
@@ -2334,7 +2334,7 @@ class LennardJonesGenerator(object):
         self.ff = forcefield
         self.nbfixTypes = {}
         self.lj14scale = lj14scale
-        self.ljTypes = ForceField._AtomTypeParameters(forcefield, 'LennardJonesForce', 'Atom', ('sigma', 'epsilon', 'c6', 'c8', 'c10', 'c12'))
+        self.ljTypes = ForceField._AtomTypeParameters(forcefield, 'LennardJonesForce', 'Atom', ('sigma', 'epsilon', 'c6', 'c8', 'c10', 'c12', 'a', 'b'))
 
     def registerNBFIX(self, parameters):
         types = self.ff._findAtomTypes(parameters, 2)

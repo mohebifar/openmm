@@ -280,6 +280,8 @@ private:
     std::vector<float> C8params;
     std::vector<float> C10params;
     std::vector<float> C12params;
+    std::vector<float> Aparams;
+    std::vector<float> Bparams;
     NonbondedMethod nonbondedMethod;
     CpuNonbondedForce* nonbonded;
     Kernel optimizedPme, optimizedDispersionPme;
