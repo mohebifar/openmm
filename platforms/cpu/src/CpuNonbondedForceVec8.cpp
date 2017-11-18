@@ -148,7 +148,11 @@ void CpuNonbondedForceVec8::calculateBlockIxnImpl(int blockIndex, float* forces,
     fvec8 C6s(C6params[blockAtom[0]], C6params[blockAtom[1]], C6params[blockAtom[2]], C6params[blockAtom[3]], C6params[blockAtom[4]], C6params[blockAtom[5]], C6params[blockAtom[6]], C6params[blockAtom[7]]);
     fvec8 C8s(C8params[blockAtom[0]], C8params[blockAtom[1]], C8params[blockAtom[2]], C8params[blockAtom[3]], C8params[blockAtom[4]], C8params[blockAtom[5]], C8params[blockAtom[6]], C8params[blockAtom[7]]);
     fvec8 C10s(C10params[blockAtom[0]], C10params[blockAtom[1]], C10params[blockAtom[2]], C10params[blockAtom[3]], C10params[blockAtom[4]], C10params[blockAtom[5]], C10params[blockAtom[6]], C10params[blockAtom[7]]);
-    fvec8 C12s(C12params[blockAtom[0]], C12params[blockAtom[1]], C12params[blockAtom[2]], C12params[blockAtom[3]], C12params[blockAtom[4]], C12params[blockAtom[5]], C12params[blockAtom[6]], C12params[blockAtom[7]]);const bool needPeriodic = (PERIODIC_TYPE == PeriodicPerInteraction || PERIODIC_TYPE == PeriodicTriclinic);
+    fvec8 C12s(C12params[blockAtom[0]], C12params[blockAtom[1]], C12params[blockAtom[2]], C12params[blockAtom[3]], C12params[blockAtom[4]], C12params[blockAtom[5]], C12params[blockAtom[6]], C12params[blockAtom[7]]);
+    fvec8 As(Aparams[blockAtom[0]], Aparams[blockAtom[1]], Aparams[blockAtom[2]], Aparams[blockAtom[3]], Aparams[blockAtom[4]], Aparams[blockAtom[5]], Aparams[blockAtom[6]], Aparams[blockAtom[7]]);
+    fvec8 Bs(Bparams[blockAtom[0]], Bparams[blockAtom[1]], Bparams[blockAtom[2]], Bparams[blockAtom[3]], Bparams[blockAtom[4]], Bparams[blockAtom[5]], Bparams[blockAtom[6]], Bparams[blockAtom[7]]);
+    
+    const bool needPeriodic = (PERIODIC_TYPE == PeriodicPerInteraction || PERIODIC_TYPE == PeriodicTriclinic);
     const float invSwitchingInterval = 1/(cutoffDistance-switchingDistance);
     
     // Loop over neighbors for this block.
@@ -188,6 +192,11 @@ void CpuNonbondedForceVec8::calculateBlockIxnImpl(int blockIndex, float* forces,
         fvec8 _c8 = C8params[atom] * inverseR6 * inverseR2;
         fvec8 _c10 = C10params[atom] * inverseR6 * inverseR2 * inverseR2;
         fvec8 _c12 = C12params[atom] * inverseR6 * inverseR6;
+        
+        fvec8 r = r2*inverseR;
+        fvec8 buckRepulsionCombinedB = Bparams[atom] * Bs;
+        fvec8 buckRepulsionExp = -1 * buckRepulsionCombinedB * r;
+        fvec8 buckRepulsion = Aparams[atom] * As * exp(buckRepulsionExp);
 
         fvec8 energy, dEdR;
         // float atomEpsilon = atomParameters[atom].second;
@@ -200,11 +209,10 @@ void CpuNonbondedForceVec8::calculateBlockIxnImpl(int blockIndex, float* forces,
         //     dEdR = epsSig6*(12.0f*sig6 - 6.0f);
         //     energy = epsSig6*(sig6-1.0f);
 
-            dEdR = 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
-            energy = (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
+            dEdR = buckRepulsionCombinedB * buckRepulsion + 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
+            energy = buckRepulsion + (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
 
             if (useSwitch) {
-                fvec8 r = r2*inverseR;
                 fvec8 t = (r>switchingDistance) & ((r-switchingDistance)*invSwitchingInterval);
                 fvec8 switchValue = 1+t*t*t*(-10.0f+t*(15.0f-t*6.0f));
                 fvec8 switchDeriv = t*t*(-30.0f+t*(60.0f-t*30.0f))*invSwitchingInterval;
@@ -328,6 +336,8 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
     fvec8 C8s(C8params[blockAtom[0]], C8params[blockAtom[1]], C8params[blockAtom[2]], C8params[blockAtom[3]], C8params[blockAtom[4]], C8params[blockAtom[5]], C8params[blockAtom[6]], C8params[blockAtom[7]]);
     fvec8 C10s(C10params[blockAtom[0]], C10params[blockAtom[1]], C10params[blockAtom[2]], C10params[blockAtom[3]], C10params[blockAtom[4]], C10params[blockAtom[5]], C10params[blockAtom[6]], C10params[blockAtom[7]]);
     fvec8 C12s(C12params[blockAtom[0]], C12params[blockAtom[1]], C12params[blockAtom[2]], C12params[blockAtom[3]], C12params[blockAtom[4]], C12params[blockAtom[5]], C12params[blockAtom[6]], C12params[blockAtom[7]]);
+    fvec8 As(Aparams[blockAtom[0]], Aparams[blockAtom[1]], Aparams[blockAtom[2]], Aparams[blockAtom[3]], Aparams[blockAtom[4]], Aparams[blockAtom[5]], Aparams[blockAtom[6]], Aparams[blockAtom[7]]);
+    fvec8 Bs(Bparams[blockAtom[0]], Bparams[blockAtom[1]], Bparams[blockAtom[2]], Bparams[blockAtom[3]], Bparams[blockAtom[4]], Bparams[blockAtom[5]], Bparams[blockAtom[6]], Bparams[blockAtom[7]]);
     const bool needPeriodic = (PERIODIC_TYPE == PeriodicPerInteraction || PERIODIC_TYPE == PeriodicTriclinic);
     const float invSwitchingInterval = 1/(cutoffDistance-switchingDistance);
     
@@ -369,8 +379,13 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
         fvec8 _c8 = C8params[atom] * inverseR6 * inverseR2;
         fvec8 _c10 = C10params[atom] * inverseR6 * inverseR2 * inverseR2;
         fvec8 _c12 = C12params[atom] * inverseR6 * inverseR6;
-        
+
         fvec8 r = r2*inverseR;
+
+        fvec8 buckRepulsionCombinedB = Bparams[atom] * Bs;
+        fvec8 buckRepulsionExp = -1 * buckRepulsionCombinedB * r;
+        fvec8 buckRepulsion = Aparams[atom] * As * exp(buckRepulsionExp);
+
         fvec8 energy, dEdR;
         // float atomEpsilon = atomParameters[atom].second;
         // if (atomEpsilon != 0.0f) {
@@ -386,8 +401,8 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
             // fvec8 t_dEdR = epsSig6*(12.0f*sig6 - 6.0f);
             // fvec8 t_energy = epsSig6*(sig6-1.0f);
 
-            dEdR = 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
-            energy = (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
+            dEdR = buckRepulsion * buckRepulsionCombinedB + 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
+            energy = buckRepulsion + (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
 
             // float a = t_dEdR->val[0];
             // float b = dEdR->val[0];
