@@ -196,18 +196,8 @@ void CpuNonbondedForceVec8::calculateBlockIxnImpl(int blockIndex, float* forces,
         fvec8 r = r2*inverseR;
 
         fvec8 buckRepulsionCombinedB = Bparams[atom] * Bs;
-        fvec8 buckRepulsionExpPower = -1 * buckRepulsionCombinedB * r;
-        fvec8 buckRepulsionExp = fvec8(
-            exp(buckRepulsionExpPower->val[0]),
-            exp(buckRepulsionExpPower->val[1]),
-            exp(buckRepulsionExpPower->val[2]),
-            exp(buckRepulsionExpPower->val[3]),
-            exp(buckRepulsionExpPower->val[4]),
-            exp(buckRepulsionExpPower->val[5]),
-            exp(buckRepulsionExpPower->val[6]),
-            exp(buckRepulsionExpPower->val[7])
-        );
-        fvec8 buckRepulsion = Aparams[atom] * As * buckRepulsionExp;
+        fvec8 buckRepulsionExp = -1 * buckRepulsionCombinedB * r;
+        fvec8 buckRepulsion = Aparams[atom] * As * exp(buckRepulsionExp);
 
         fvec8 energy, dEdR;
         // float atomEpsilon = atomParameters[atom].second;
@@ -394,18 +384,8 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
         fvec8 r = r2*inverseR;
 
         fvec8 buckRepulsionCombinedB = Bparams[atom] * Bs;
-        fvec8 buckRepulsionExpPower = -1 * buckRepulsionCombinedB * r;
-        fvec8 buckRepulsionExp = fvec8(
-            exp(buckRepulsionExpPower->val[0]),
-            exp(buckRepulsionExpPower->val[1]),
-            exp(buckRepulsionExpPower->val[2]),
-            exp(buckRepulsionExpPower->val[3]),
-            exp(buckRepulsionExpPower->val[4]),
-            exp(buckRepulsionExpPower->val[5]),
-            exp(buckRepulsionExpPower->val[6]),
-            exp(buckRepulsionExpPower->val[7])
-        );
-        fvec8 buckRepulsion = Aparams[atom] * As * buckRepulsionExp;
+        fvec8 buckRepulsionExp = -1 * buckRepulsionCombinedB * r;
+        fvec8 buckRepulsion = Aparams[atom] * As * exp(buckRepulsionExp);
 
         fvec8 energy, dEdR;
         // float atomEpsilon = atomParameters[atom].second;
