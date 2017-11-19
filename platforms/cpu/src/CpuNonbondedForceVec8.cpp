@@ -210,7 +210,7 @@ void CpuNonbondedForceVec8::calculateBlockIxnImpl(int blockIndex, float* forces,
         //     dEdR = epsSig6*(12.0f*sig6 - 6.0f);
         //     energy = epsSig6*(sig6-1.0f);
 
-            dEdR = buckRepulsionCombinedB * buckRepulsion + 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
+            dEdR = r * buckRepulsionCombinedB * buckRepulsion + 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
             energy = buckRepulsion + (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
 
             if (useSwitch) {
@@ -230,7 +230,7 @@ void CpuNonbondedForceVec8::calculateBlockIxnImpl(int blockIndex, float* forces,
             dEdR += chargeProd*(inverseR-2.0f*krf*r2);
         else
             dEdR += chargeProd*inverseR;
-        dEdR *= inverseR*inverseR;
+        dEdR *= inverseR2;
 
         // Accumulate energies.
 
@@ -402,7 +402,7 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
             // fvec8 t_dEdR = epsSig6*(12.0f*sig6 - 6.0f);
             // fvec8 t_energy = epsSig6*(sig6-1.0f);
 
-            dEdR = buckRepulsion * buckRepulsionCombinedB + 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
+            dEdR = r * buckRepulsion * buckRepulsionCombinedB + 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
             energy = buckRepulsion + (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
 
             // float a = t_dEdR->val[0];
@@ -419,13 +419,13 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
                 energy *= switchValue;
             }
             if (ljpme) {
-                fvec8 C6ij = C6s*C6params[atom];
-                fvec8 inverseR2 = inverseR*inverseR;
+                fvec8 C6ij = C6s * _c6;
+                // fvec8 inverseR2 = inverseR*inverseR;
                 // fvec8 mysig2 = sig*sig;
                 // fvec8 mysig6 = mysig2*mysig2*mysig2;
-                fvec8 emult = C6ij*inverseR2*inverseR2*inverseR2*exptermsApprox(r);
+                fvec8 emult = C6ij*exptermsApprox(r);
                 // fvec8 potentialShift = eps*(1.0f-mysig6*inverseRcut6)*mysig6*inverseRcut6 - C6ij*inverseRcut6Expterm;
-                dEdR += 6.0f*C6ij*inverseR2*inverseR2*inverseR2*dExptermsApprox(r);
+                dEdR += 6.0f*C6ij*dExptermsApprox(r);
                 energy += emult/* + potentialShift*/;
             }
 
@@ -436,7 +436,7 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
         // }
         fvec8 chargeProd = blockAtomCharge*posq[4*atom+3];
         dEdR += chargeProd*inverseR*ewaldScaleFunction(r);
-        dEdR *= inverseR*inverseR;
+        dEdR *= inverseR2;
 
         // Accumulate energies.
 
