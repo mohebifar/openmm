@@ -683,6 +683,8 @@ private:
     ForceInfo* info;
     bool hasInitializedFFT;
     CudaArray* sigmaEpsilon;
+    CudaArray* cCoefficients;
+    CudaArray* buckingham;
     CudaArray* exceptionParams;
     CudaArray* cosSinSums;
     CudaArray* directPmeGrid;

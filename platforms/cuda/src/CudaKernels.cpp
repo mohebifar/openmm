@@ -1453,10 +1453,13 @@ public:
     ForceInfo(const NonbondedForce& force) : force(force) {
     }
     bool areParticlesIdentical(int particle1, int particle2) {
-        double charge1, charge2, sigma1, sigma2, epsilon1, epsilon2;
-        force.getParticleParameters(particle1, charge1, sigma1, epsilon1);
-        force.getParticleParameters(particle2, charge2, sigma2, epsilon2);
-        return (charge1 == charge2 && sigma1 == sigma2 && epsilon1 == epsilon2);
+        double charge1, charge2, sigma1, sigma2, epsilon1, epsilon2, c61, c62, c81, c82, c101, c102, c121, c122, A1, A2, b1, b2;
+        force.getParticleParameters(particle1, charge1, sigma1, epsilon1, c61, c81, c101, c121, A1, b1);
+        force.getParticleParameters(particle2, charge2, sigma2, epsilon2, c62, c82, c102, c122, A2, b2);
+        return (
+            charge1 == charge2 && sigma1 == sigma2 && epsilon1 == epsilon2
+            && c61 == c62 && c81 == c82 && c101 == c102 && c121 == c122 && A1 == A2 && b1 == b2
+        );
     }
     int getNumParticleGroups() {
         return force.getNumExceptions();
@@ -1652,21 +1655,36 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
     float4* posqf = (float4*) &temp[0];
     double4* posqd = (double4*) &temp[0];
     vector<float2> sigmaEpsilonVector(cu.getPaddedNumAtoms(), make_float2(0, 0));
+
+    // BUCKINGHAM
+    vector<float4> cCoefficientsVector(cu.getPaddedNumAtoms(), make_float4(0, 0, 0, 0));
+    vector<float2> buckinghamVector(cu.getPaddedNumAtoms(), make_float2(0, 0));
+
     vector<vector<int> > exclusionList(numParticles);
     double sumSquaredCharges = 0.0;
     double sumSquaredC6 = 0.0;
     hasCoulomb = false;
     hasLJ = false;
     for (int i = 0; i < numParticles; i++) {
-        double charge, sigma, epsilon;
-        force.getParticleParameters(i, charge, sigma, epsilon);
+        double charge, sigma, epsilon, c6, c8, c10, c12, A, b;
+        force.getParticleParameters(i, charge, sigma, epsilon, c6, c8, c10, c12, A, b);
         if (cu.getUseDoublePrecision())
             posqd[i] = make_double4(0, 0, 0, charge);
         else
             posqf[i] = make_float4(0, 0, 0, (float) charge);
         double sig = 0.5*sigma;
         double eps = 2.0*sqrt(epsilon);
+
+        double sqC6 = sqrt(c6);
+        double sqC8 = sqrt(c8);
+        double sqC10 = sqrt(c10);
+        double sqC12 = sqrt(c12);
+        double sqA = sqrt(A);
+        double sqB = sqrt(b);
+
         sigmaEpsilonVector[i] = make_float2(sig, eps);
+        cCoefficientsVector[i] = make_float4(sqC6, sqC8, sqC10, sqC12);
+        buckinghamVector[i] = make_float2(sqA, sqB);
         exclusionList[i].push_back(i);
         sumSquaredCharges += charge*charge;
         double C6 = 8.0*sig*sig*sig*eps;
@@ -1682,6 +1700,8 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
     }
     posq.upload(&temp[0]);
     sigmaEpsilon->upload(sigmaEpsilonVector);
+    cCoefficients->upload(cCoefficientsVector);
+    buckingham->upload(buckinghamVector);
     nonbondedMethod = CalcNonbondedForceKernel::NonbondedMethod(force.getNonbondedMethod());
     bool useCutoff = (nonbondedMethod != NoCutoff);
     bool usePeriodic = (nonbondedMethod != NoCutoff && nonbondedMethod != CutoffNonPeriodic);
@@ -2005,9 +2025,16 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
 
     string source = cu.replaceStrings(CudaKernelSources::coulombLennardJones, defines);
     cu.getNonbondedUtilities().addInteraction(useCutoff, usePeriodic, true, force.getCutoffDistance(), exclusionList, source, force.getForceGroup(), true);
-    if (hasLJ)
+    if (hasLJ) {
         cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("sigmaEpsilon", "float", 2,
-                                                sizeof(float2), sigmaEpsilon->getDevicePointer()));
+        sizeof(float2), sigmaEpsilon->getDevicePointer()));
+
+        cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("cCoefficients", "float", 4,
+        sizeof(float4), cCoefficients->getDevicePointer()));
+
+        cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("buckingham", "float", 2,
+        sizeof(float2), buckingham->getDevicePointer()));
+    }
 
     // Initialize the exceptions.
 
@@ -2241,8 +2268,8 @@ void CudaCalcNonbondedForceKernel::copyParametersToContext(ContextImpl& context,
     double sumSquaredC6 = 0.0;
     const vector<int>& order = cu.getAtomIndex();
     for (int i = 0; i < force.getNumParticles(); i++) {
-        double charge, sigma, epsilon;
-        force.getParticleParameters(i, charge, sigma, epsilon);
+        double charge, sigma, epsilon, c6, c8, c10, c12, A, b;
+        force.getParticleParameters(i, charge, sigma, epsilon, c6, c8, c10, c12, A, b);
         chargeVector[i] = charge;
         double sig = (0.5*sigma);
         double eps = (2.0*sqrt(epsilon));

@@ -29,10 +29,10 @@
         const real dar4 = dar2*dar2;
         const real dar6 = dar4*dar2;
         const real invR2 = invR*invR;
+        const real invR6 = invR2*invR2*invR2;
         const real expDar2 = EXP(-dar2);
-        const float2 sigExpProd = sigmaEpsilon1*sigmaEpsilon2;
-        const real c6 = 64*sigExpProd.x*sigExpProd.x*sigExpProd.x*sigExpProd.y;
-        const real coef = invR2*invR2*invR2*c6;
+        const real c6 = cCoefficients1.x * cCoefficients2.x;
+        const real coef = invR6*c6;
         const real eprefac = 1.0f + dar2 + 0.5f*dar4;
         const real dprefac = eprefac + dar6/6.0f;
     #endif
@@ -59,14 +59,24 @@
     }
     else {
 #if HAS_LENNARD_JONES
-        real sig = sigmaEpsilon1.x + sigmaEpsilon2.x;
-        real sig2 = invR*sig;
-        sig2 *= sig2;
-        real sig6 = sig2*sig2*sig2;
-        real eps = sigmaEpsilon1.y*sigmaEpsilon2.y;
-        real epssig6 = sig6*eps;
-        tempForce = epssig6*(12.0f*sig6 - 6.0f);
-        real ljEnergy = epssig6*(sig6 - 1.0f);
+        // real sig = sigmaEpsilon1.x + sigmaEpsilon2.x;
+        // real sig2 = invR*sig;
+        // sig2 *= sig2;
+        // real sig6 = sig2*sig2*sig2;
+        // real eps = sigmaEpsilon1.y*sigmaEpsilon2.y;
+        // real epssig6 = sig6*eps;
+
+        real c6 = cCoefficients1.x * cCoefficients2.x * invR6;
+        real c8 = cCoefficients1.y * cCoefficients2.y * invR6 * invR2;
+        real c10 = cCoefficients1.z * cCoefficients2.z * invR6 * invR2 * invR2;
+        real c12 = cCoefficients1.w * cCoefficients2.w * invR6 * invR6;
+
+        real combinedB = buckingham1.y * buckingham2.y;
+        real buckinghamExp = -1 * combinedB * r;
+        real buckinghamRepulsion = buckingham1.x * buckingham2.x * EXP(buckinghamExp);
+        
+        tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - 6.0f * c6 - 8.0f * c8 - 10.0f * c10;
+        real ljEnergy = buckinghamRepulsion + c12 - c6 - c8 - c10;
         #if USE_LJ_SWITCH
         if (r > LJ_SWITCH_CUTOFF) {
             real x = r-LJ_SWITCH_CUTOFF;
@@ -84,13 +94,16 @@
         // transition from additive to multiplicative combintion rules and is only
         // needed for the real (not excluded) terms.  By addin these terms to ljEnergy
         // instead of tempEnergy here, the includeInteraction mask is correctly applied.
-        sig2 = sig*sig;
-        sig6 = sig2*sig2*sig2*INVCUT6;
-        epssig6 = eps*sig6;
+        // sig2 = sig*sig;
+        // sig6 = sig2*sig2*sig2*INVCUT6;
+        // epssig6 = eps*sig6;
+
+        // BUCKINGHAM - COMMENTED OUT THE POTENTIAL SHIFT
+
         // The additive part of the potential shift
-        ljEnergy += epssig6*(1.0f - sig6);
+        // ljEnergy += epssig6*(1.0f - sig6);
         // The multiplicative part of the potential shift
-        ljEnergy += MULTSHIFT6*c6;
+        // ljEnergy += MULTSHIFT6*c6;
 #endif
         tempForce += prefactor*(erfcAlphaR+alphaR*expAlphaRSqr*TWO_OVER_SQRT_PI);
         tempEnergy += includeInteraction ? ljEnergy + prefactor*erfcAlphaR : 0;
@@ -108,13 +121,27 @@
 #endif
     real tempForce = 0.0f;
   #if HAS_LENNARD_JONES
-    real sig = sigmaEpsilon1.x + sigmaEpsilon2.x;
-    real sig2 = invR*sig;
-    sig2 *= sig2;
-    real sig6 = sig2*sig2*sig2;
-    real epssig6 = sig6*(sigmaEpsilon1.y*sigmaEpsilon2.y);
-    tempForce = epssig6*(12.0f*sig6 - 6.0f);
-    real ljEnergy = includeInteraction ? epssig6*(sig6 - 1) : 0;
+    // real sig = sigmaEpsilon1.x + sigmaEpsilon2.x;
+    // real sig2 = invR*sig;
+    // sig2 *= sig2;
+    // real sig6 = sig2*sig2*sig2;
+    // real epssig6 = sig6*(sigmaEpsilon1.y*sigmaEpsilon2.y);
+    // tempForce = epssig6*(12.0f*sig6 - 6.0f);
+    // real ljEnergy = includeInteraction ? epssig6*(sig6 - 1) : 0;
+
+    real c6 = cCoefficients1.x * cCoefficients2.x * invR6;
+    real c8 = cCoefficients1.y * cCoefficients2.y * invR6 * invR2;
+    real c10 = cCoefficients1.z * cCoefficients2.z * invR6 * invR2 * invR2;
+    real c12 = cCoefficients1.w * cCoefficients2.w * invR6 * invR6;
+
+    real combinedB = buckingham1.y * buckingham2.y;
+    real buckinghamExp = -1 * combinedB * r;
+    real buckinghamRepulsion = buckingham1.x * buckingham2.x * EXP(buckinghamExp);
+    
+    tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - 6.0f * c6 - 8.0f * c8 - 10.0f * c10;
+    real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - c6 - c8 - c10 : 0;
+
+
     #if USE_LJ_SWITCH
     if (r > LJ_SWITCH_CUTOFF) {
         real x = r-LJ_SWITCH_CUTOFF;
