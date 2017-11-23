@@ -23,13 +23,13 @@
     // added in, but for excluded terms the multiplicative term is just subtracted.
     // These factors are needed in both clauses of the needCorrection statement, so
     // I declare them up here.
+    const real invR2 = invR*invR;
+    const real invR6 = invR2*invR2*invR2;
     #if DO_LJPME
         const real dispersionAlphaR = EWALD_DISPERSION_ALPHA*r;
         const real dar2 = dispersionAlphaR*dispersionAlphaR;
         const real dar4 = dar2*dar2;
         const real dar6 = dar4*dar2;
-        const real invR2 = invR*invR;
-        const real invR6 = invR2*invR2*invR2;
         const real expDar2 = EXP(-dar2);
         const real c6 = cACoefficients1.x * cACoefficients2.x;
         const real coef = invR6*c6;

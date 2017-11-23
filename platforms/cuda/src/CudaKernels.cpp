@@ -2045,6 +2045,9 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
         cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("cACoefficients", "float", 2,
         sizeof(float2), cACoefficients->getDevicePointer()));
 
+        cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("cBCoefficients", "float", 2,
+        sizeof(float2), cBCoefficients->getDevicePointer()));
+
         cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("buckingham", "float", 2,
         sizeof(float2), buckingham->getDevicePointer()));
     }
