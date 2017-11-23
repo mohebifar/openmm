@@ -23,7 +23,7 @@ extern "C" __global__ void gridSpreadCharge(const real4* __restrict__ posq, real
         real4 periodicBoxSize, real4 invPeriodicBoxSize, real4 periodicBoxVecX, real4 periodicBoxVecY, real4 periodicBoxVecZ,
         real3 recipBoxVecX, real3 recipBoxVecY, real3 recipBoxVecZ, const int2* __restrict__ pmeAtomGridIndex
 #ifdef USE_LJPME
-        , const float2* __restrict__ sigmaEpsilon
+        , const float2* __restrict__ cCoefficients
 #endif
         ) {
     real3 data[PME_ORDER];
@@ -68,8 +68,7 @@ extern "C" __global__ void gridSpreadCharge(const real4* __restrict__ posq, real
         // Spread the charge from this atom onto each grid point.
         
 #ifdef USE_LJPME
-        const float2 sigEps = sigmaEpsilon[atom];
-        const real charge = 8*sigEps.x*sigEps.x*sigEps.x*sigEps.y;
+        const real charge = cCoefficients[atom].x;
 #else
         const real charge = pos.w;
 #endif
@@ -250,7 +249,7 @@ void gridInterpolateForce(const real4* __restrict__ posq, unsigned long long* __
         real4 periodicBoxSize, real4 invPeriodicBoxSize, real4 periodicBoxVecX, real4 periodicBoxVecY, real4 periodicBoxVecZ,
         real3 recipBoxVecX, real3 recipBoxVecY, real3 recipBoxVecZ, const int2* __restrict__ pmeAtomGridIndex
 #ifdef USE_LJPME
-        , const float2* __restrict__ sigmaEpsilon
+        , const float2* __restrict__ cCoefficients
 #endif
         ) {
     real3 data[PME_ORDER];
@@ -325,8 +324,7 @@ void gridInterpolateForce(const real4* __restrict__ posq, unsigned long long* __
             }
         }
 #ifdef USE_LJPME
-        const float2 sigEps = sigmaEpsilon[atom];
-        real q = 8*sigEps.x*sigEps.x*sigEps.x*sigEps.y;
+        real q = cCoefficients[atom].x;
 #else
         real q = pos.w*EPSILON_FACTOR;
 #endif
