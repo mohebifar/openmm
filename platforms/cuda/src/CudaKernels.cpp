@@ -1580,6 +1580,10 @@ CudaCalcNonbondedForceKernel::~CudaCalcNonbondedForceKernel() {
     cu.setAsCurrent();
     if (sigmaEpsilon != NULL)
         delete sigmaEpsilon;
+    if (cCoefficients != NULL)
+        delete cCoefficients;
+    if (buckingham != NULL)
+        delete buckingham;
     if (exceptionParams != NULL)
         delete exceptionParams;
     if (cosSinSums != NULL)
@@ -1650,6 +1654,9 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
 
     int numParticles = force.getNumParticles();
     sigmaEpsilon = CudaArray::create<float2>(cu, cu.getPaddedNumAtoms(), "sigmaEpsilon");
+    cCoefficients = CudaArray::create<float2>(cu, cu.getPaddedNumAtoms(), "cCoefficients");
+    buckingham = CudaArray::create<float2>(cu, cu.getPaddedNumAtoms(), "buckingham");
+    
     CudaArray& posq = cu.getPosq();
     vector<double4> temp(posq.getSize());
     float4* posqf = (float4*) &temp[0];
