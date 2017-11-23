@@ -1699,8 +1699,9 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
         buckinghamVector[i] = make_float2(sqA, sqB);
         exclusionList[i].push_back(i);
         sumSquaredCharges += charge*charge;
-        double C6 = 8.0*sig*sig*sig*eps;
-        sumSquaredC6 += C6*C6;
+        // double C6 = 8.0*sig*sig*sig*eps;
+        // sumSquaredC6 += C6*C6;
+        sumSquaredC6 += c6;
         if (charge != 0.0)
             hasCoulomb = true;
         if (epsilon != 0.0)
@@ -2289,13 +2290,28 @@ void CudaCalcNonbondedForceKernel::copyParametersToContext(ContextImpl& context,
         chargeVector[i] = charge;
         double sig = (0.5*sigma);
         double eps = (2.0*sqrt(epsilon));
+
+        double sqC6 = sqrt(c6);
+        double sqC8 = sqrt(c8);
+        double sqC10 = sqrt(c10);
+        double sqC12 = sqrt(c12);
+        double sqA = sqrt(A);
+        double sqB = sqrt(b);
+
         sigmaEpsilonVector[i] = make_float2((float) sig, (float) eps);
-        double C6 = 8.0*sig*sig*sig*eps;
-        sumSquaredC6 += C6*C6;
+        cACoefficientsVector[i] = make_float2((float) sqC6, (float) sqC8);
+        cBCoefficientsVector[i] = make_float2((float) sqC10, (float) sqC12);
+        buckinghamVector[i] = make_float2((float) sqA, (float) sqB);
+        // double C6 = 8.0*sig*sig*sig*eps;
+        // sumSquaredC6 += C6*C6;
+        sumSquaredC6 += c6;
         sumSquaredCharges += charge*charge;
     }
     cu.setCharges(chargeVector);
     sigmaEpsilon->upload(sigmaEpsilonVector);
+    cACoefficients->upload(cACoefficientsVector);
+    cBCoefficients->upload(cBCoefficientsVector);
+    buckingham->upload(buckinghamVector);
     
     // Record the exceptions.
     
