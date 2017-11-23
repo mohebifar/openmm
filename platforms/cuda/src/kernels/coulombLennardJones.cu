@@ -31,7 +31,7 @@
         const real invR2 = invR*invR;
         const real invR6 = invR2*invR2*invR2;
         const real expDar2 = EXP(-dar2);
-        const real c6 = cCoefficients1.x * cCoefficients2.x;
+        const real c6 = cACoefficients1.x * cACoefficients2.x;
         const real coef = invR6*c6;
         const real eprefac = 1.0f + dar2 + 0.5f*dar4;
         const real dprefac = eprefac + dar6/6.0f;
@@ -66,10 +66,10 @@
         // real eps = sigmaEpsilon1.y*sigmaEpsilon2.y;
         // real epssig6 = sig6*eps;
 
-        real c6 = cCoefficients1.x * cCoefficients2.x * invR6;
-        real c8 = cCoefficients1.y * cCoefficients2.y * invR6 * invR2;
-        real c10 = cCoefficients1.z * cCoefficients2.z * invR6 * invR2 * invR2;
-        real c12 = cCoefficients1.w * cCoefficients2.w * invR6 * invR6;
+        real c6 = cACoefficients1.x * cACoefficients2.x * invR6;
+        real c8 = cACoefficients1.y * cACoefficients2.y * invR6 * invR2;
+        real c10 = cBCoefficients1.x * cBCoefficients2.x * invR6 * invR2 * invR2;
+        real c12 = cBCoefficients1.y * cBCoefficients2.y * invR6 * invR6;
 
         real combinedB = buckingham1.y * buckingham2.y;
         real buckinghamExp = -1 * combinedB * r;
@@ -129,10 +129,10 @@
     // tempForce = epssig6*(12.0f*sig6 - 6.0f);
     // real ljEnergy = includeInteraction ? epssig6*(sig6 - 1) : 0;
 
-    real c6 = cCoefficients1.x * cCoefficients2.x * invR6;
-    real c8 = cCoefficients1.y * cCoefficients2.y * invR6 * invR2;
-    real c10 = cCoefficients1.z * cCoefficients2.z * invR6 * invR2 * invR2;
-    real c12 = cCoefficients1.w * cCoefficients2.w * invR6 * invR6;
+    real c6 = cACoefficients1.x * cACoefficients2.x * invR6;
+    real c8 = cACoefficients1.y * cACoefficients2.y * invR6 * invR2;
+    real c10 = cBCoefficients1.x * cBCoefficients2.x * invR6 * invR2 * invR2;
+    real c12 = cBCoefficients1.y * cBCoefficients2.y * invR6 * invR6;
 
     real combinedB = buckingham1.y * buckingham2.y;
     real buckinghamExp = -1 * combinedB * r;

@@ -1580,8 +1580,10 @@ CudaCalcNonbondedForceKernel::~CudaCalcNonbondedForceKernel() {
     cu.setAsCurrent();
     if (sigmaEpsilon != NULL)
         delete sigmaEpsilon;
-    if (cCoefficients != NULL)
-        delete cCoefficients;
+    if (cACoefficients != NULL)
+        delete cACoefficients;
+    if (cBCoefficients != NULL)
+        delete cBCoefficients;
     if (buckingham != NULL)
         delete buckingham;
     if (exceptionParams != NULL)
@@ -1654,7 +1656,8 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
 
     int numParticles = force.getNumParticles();
     sigmaEpsilon = CudaArray::create<float2>(cu, cu.getPaddedNumAtoms(), "sigmaEpsilon");
-    cCoefficients = CudaArray::create<float4>(cu, cu.getPaddedNumAtoms(), "cCoefficients");
+    cACoefficients = CudaArray::create<float2>(cu, cu.getPaddedNumAtoms(), "cACoefficients");
+    cBCoefficients = CudaArray::create<float2>(cu, cu.getPaddedNumAtoms(), "cBCoefficients");
     buckingham = CudaArray::create<float2>(cu, cu.getPaddedNumAtoms(), "buckingham");
 
     CudaArray& posq = cu.getPosq();
@@ -1664,7 +1667,8 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
     vector<float2> sigmaEpsilonVector(cu.getPaddedNumAtoms(), make_float2(0, 0));
 
     // BUCKINGHAM
-    vector<float4> cCoefficientsVector(cu.getPaddedNumAtoms(), make_float4(0, 0, 0, 0));
+    vector<float2> cACoefficientsVector(cu.getPaddedNumAtoms(), make_float2(0, 0));
+    vector<float2> cBCoefficientsVector(cu.getPaddedNumAtoms(), make_float2(0, 0));
     vector<float2> buckinghamVector(cu.getPaddedNumAtoms(), make_float2(0, 0));
 
     vector<vector<int> > exclusionList(numParticles);
@@ -1690,7 +1694,8 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
         double sqB = sqrt(b);
 
         sigmaEpsilonVector[i] = make_float2(sig, eps);
-        cCoefficientsVector[i] = make_float4(sqC6, sqC8, sqC10, sqC12);
+        cACoefficientsVector[i] = make_float2(sqC6, sqC8);
+        cBCoefficientsVector[i] = make_float2(sqC10, sqC12);
         buckinghamVector[i] = make_float2(sqA, sqB);
         exclusionList[i].push_back(i);
         sumSquaredCharges += charge*charge;
@@ -1707,7 +1712,8 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
     }
     posq.upload(&temp[0]);
     sigmaEpsilon->upload(sigmaEpsilonVector);
-    cCoefficients->upload(cCoefficientsVector);
+    cACoefficients->upload(cACoefficientsVector);
+    cBCoefficients->upload(cBCoefficientsVector);
     buckingham->upload(buckinghamVector);
     nonbondedMethod = CalcNonbondedForceKernel::NonbondedMethod(force.getNonbondedMethod());
     bool useCutoff = (nonbondedMethod != NoCutoff);
@@ -2036,8 +2042,8 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
         cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("sigmaEpsilon", "float", 2,
         sizeof(float2), sigmaEpsilon->getDevicePointer()));
 
-        cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("cCoefficients", "float", 4,
-        sizeof(float4), cCoefficients->getDevicePointer()));
+        cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("cACoefficients", "float", 2,
+        sizeof(float2), cACoefficients->getDevicePointer()));
 
         cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("buckingham", "float", 2,
         sizeof(float2), buckingham->getDevicePointer()));
@@ -2176,7 +2182,7 @@ double CudaCalcNonbondedForceKernel::execute(ContextImpl& context, bool includeF
             void* spreadArgs[] = {&cu.getPosq().getDevicePointer(), &directPmeGrid->getDevicePointer(), cu.getPeriodicBoxSizePointer(),
                     cu.getInvPeriodicBoxSizePointer(), cu.getPeriodicBoxVecXPointer(), cu.getPeriodicBoxVecYPointer(), cu.getPeriodicBoxVecZPointer(),
                     recipBoxVectorPointer[0], recipBoxVectorPointer[1], recipBoxVectorPointer[2], &pmeAtomGridIndex->getDevicePointer(),
-                    &cCoefficients->getDevicePointer()};
+                    &cACoefficients->getDevicePointer()};
             cu.executeKernel(pmeDispersionSpreadChargeKernel, spreadArgs, cu.getNumAtoms(), 128);
 
             if (cu.getUseDoublePrecision() || cu.getComputeCapability() < 2.0 || cu.getPlatformData().deterministicForces) {
@@ -2219,7 +2225,7 @@ double CudaCalcNonbondedForceKernel::execute(ContextImpl& context, bool includeF
             void* interpolateArgs[] = {&cu.getPosq().getDevicePointer(), &cu.getForce().getDevicePointer(), &directPmeGrid->getDevicePointer(), cu.getPeriodicBoxSizePointer(),
                     cu.getInvPeriodicBoxSizePointer(), cu.getPeriodicBoxVecXPointer(), cu.getPeriodicBoxVecYPointer(), cu.getPeriodicBoxVecZPointer(),
                     recipBoxVectorPointer[0], recipBoxVectorPointer[1], recipBoxVectorPointer[2], &pmeAtomGridIndex->getDevicePointer(),
-                    &cCoefficients->getDevicePointer()};
+                    &cACoefficients->getDevicePointer()};
             cu.executeKernel(pmeInterpolateDispersionForceKernel, interpolateArgs, cu.getNumAtoms(), 128);
         }
         if (usePmeStream) {
