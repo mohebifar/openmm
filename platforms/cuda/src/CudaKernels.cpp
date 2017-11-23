@@ -2039,8 +2039,8 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
     string source = cu.replaceStrings(CudaKernelSources::coulombLennardJones, defines);
     cu.getNonbondedUtilities().addInteraction(useCutoff, usePeriodic, true, force.getCutoffDistance(), exclusionList, source, force.getForceGroup(), true);
     if (hasLJ) {
-        cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("sigmaEpsilon", "float", 2,
-        sizeof(float2), sigmaEpsilon->getDevicePointer()));
+        // cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("sigmaEpsilon", "float", 2,
+        // sizeof(float2), sigmaEpsilon->getDevicePointer()));
 
         cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("cACoefficients", "float", 2,
         sizeof(float2), cACoefficients->getDevicePointer()));
