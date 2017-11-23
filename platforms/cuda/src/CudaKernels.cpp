@@ -1454,8 +1454,8 @@ public:
     }
     bool areParticlesIdentical(int particle1, int particle2) {
         double charge1, charge2, sigma1, sigma2, epsilon1, epsilon2, c61, c62, c81, c82, c101, c102, c121, c122, A1, A2, b1, b2;
-        force.getParticleParameters(particle1, charge1, sigma1, epsilon1, c61, c81, c101, c121, A1, b1);
-        force.getParticleParameters(particle2, charge2, sigma2, epsilon2, c62, c82, c102, c122, A2, b2);
+        force.getParticleParametersDisp(particle1, charge1, sigma1, epsilon1, c61, c81, c101, c121, A1, b1);
+        force.getParticleParametersDisp(particle2, charge2, sigma2, epsilon2, c62, c82, c102, c122, A2, b2);
         return (
             charge1 == charge2 && sigma1 == sigma2 && epsilon1 == epsilon2
             && c61 == c62 && c81 == c82 && c101 == c102 && c121 == c122 && A1 == A2 && b1 == b2
@@ -1667,7 +1667,7 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
     hasLJ = false;
     for (int i = 0; i < numParticles; i++) {
         double charge, sigma, epsilon, c6, c8, c10, c12, A, b;
-        force.getParticleParameters(i, charge, sigma, epsilon, c6, c8, c10, c12, A, b);
+        force.getParticleParametersDisp(i, charge, sigma, epsilon, c6, c8, c10, c12, A, b);
         if (cu.getUseDoublePrecision())
             posqd[i] = make_double4(0, 0, 0, charge);
         else
@@ -2269,7 +2269,7 @@ void CudaCalcNonbondedForceKernel::copyParametersToContext(ContextImpl& context,
     const vector<int>& order = cu.getAtomIndex();
     for (int i = 0; i < force.getNumParticles(); i++) {
         double charge, sigma, epsilon, c6, c8, c10, c12, A, b;
-        force.getParticleParameters(i, charge, sigma, epsilon, c6, c8, c10, c12, A, b);
+        force.getParticleParametersDisp(i, charge, sigma, epsilon, c6, c8, c10, c12, A, b);
         chargeVector[i] = charge;
         double sig = (0.5*sigma);
         double eps = (2.0*sqrt(epsilon));
