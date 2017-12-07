@@ -1704,8 +1704,8 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
         sumSquaredC6 += c6;
         if (charge != 0.0)
             hasCoulomb = true;
-        if (epsilon != 0.0)
-            hasLJ = true;
+        // if (epsilon != 0.0)
+        //     hasLJ = true;
     }
     for (auto exclusion : exclusions) {
         exclusionList[exclusion.first].push_back(exclusion.second);
@@ -2281,6 +2281,12 @@ void CudaCalcNonbondedForceKernel::copyParametersToContext(ContextImpl& context,
     
     vector<double> chargeVector(cu.getNumAtoms());
     vector<float2> sigmaEpsilonVector(cu.getPaddedNumAtoms(), make_float2(0, 0));
+    
+    // BUCKINGHAM
+    vector<float2> cACoefficientsVector(cu.getPaddedNumAtoms(), make_float2(0, 0));
+    vector<float2> cBCoefficientsVector(cu.getPaddedNumAtoms(), make_float2(0, 0));
+    vector<float2> buckinghamVector(cu.getPaddedNumAtoms(), make_float2(0, 0));
+
     double sumSquaredCharges = 0.0;
     double sumSquaredC6 = 0.0;
     const vector<int>& order = cu.getAtomIndex();
