@@ -1,4 +1,6 @@
 {
+const real invR2 = invR*invR;
+const real invR6 = invR2*invR2*invR2;
 #if USE_EWALD
     bool needCorrection = hasExclusions && isExcluded && atom1 != atom2 && atom1 < NUM_ATOMS && atom2 < NUM_ATOMS;
     unsigned int includeInteraction = ((!isExcluded && r2 < CUTOFF_SQUARED) || needCorrection);
@@ -23,8 +25,6 @@
     // added in, but for excluded terms the multiplicative term is just subtracted.
     // These factors are needed in both clauses of the needCorrection statement, so
     // I declare them up here.
-    const real invR2 = invR*invR;
-    const real invR6 = invR2*invR2*invR2;
     #if DO_LJPME
         const real dispersionAlphaR = EWALD_DISPERSION_ALPHA*r;
         const real dar2 = dispersionAlphaR*dispersionAlphaR;
@@ -102,6 +102,7 @@
 
         // The additive part of the potential shift
         // ljEnergy += epssig6*(1.0f - sig6);
+        ljEnergy += buckinghamRepulsion + c12 - c6 - c8 - c10;
         // The multiplicative part of the potential shift
         // ljEnergy += MULTSHIFT6*c6;
 #endif
