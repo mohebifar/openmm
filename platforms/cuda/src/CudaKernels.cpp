@@ -1690,8 +1690,8 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
         double sqC8 = sqrt(c8);
         double sqC10 = sqrt(c10);
         double sqC12 = sqrt(c12);
-        double sqA = A/2;
-        double sqB = b/2;
+        double sqA = sqrt(A);
+        double sqB = sqrt(b);
 
         sigmaEpsilonVector[i] = make_float2(sig, eps);
         cACoefficientsVector[i] = make_float2(sqC6, sqC8);
@@ -2295,8 +2295,8 @@ void CudaCalcNonbondedForceKernel::copyParametersToContext(ContextImpl& context,
         double sqC8 = sqrt(c8);
         double sqC10 = sqrt(c10);
         double sqC12 = sqrt(c12);
-        double sqA = A/2;
-        double sqB = b/2;
+        double sqA = sqrt(A);
+        double sqB = sqrt(B);
 
         sigmaEpsilonVector[i] = make_float2((float) sig, (float) eps);
         cACoefficientsVector[i] = make_float2((float) sqC6, (float) sqC8);

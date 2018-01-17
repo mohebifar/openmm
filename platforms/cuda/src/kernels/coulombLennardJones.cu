@@ -71,9 +71,9 @@
         real c10 = cBCoefficients1.x * cBCoefficients2.x * invR6 * invR2 * invR2;
         real c12 = cBCoefficients1.y * cBCoefficients2.y * invR6 * invR6;
 
-        real combinedB = buckingham1.y + buckingham2.y;
+        real combinedB = buckingham1.y * buckingham2.y;
         real buckinghamExp = -1 * combinedB * r;
-        real buckinghamRepulsion = (buckingham1.x + buckingham2.x) * EXP(buckinghamExp);
+        real buckinghamRepulsion = (buckingham1.x * buckingham2.x) * EXP(buckinghamExp);
         
         tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - 6.0f * c6 - 8.0f * c8 - 10.0f * c10;
         real ljEnergy = buckinghamRepulsion + c12 - c6 - c8 - c10;
@@ -134,9 +134,9 @@
     real c10 = cBCoefficients1.x * cBCoefficients2.x * invR6 * invR2 * invR2;
     real c12 = cBCoefficients1.y * cBCoefficients2.y * invR6 * invR6;
 
-    real combinedB = buckingham1.y + buckingham2.y;
+    real combinedB = buckingham1.y * buckingham2.y;
     real buckinghamExp = -1 * combinedB * r;
-    real buckinghamRepulsion = (buckingham1.x + buckingham2.x) * EXP(buckinghamExp);
+    real buckinghamRepulsion = (buckingham1.x * buckingham2.x) * EXP(buckinghamExp);
     
     tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - 6.0f * c6 - 8.0f * c8 - 10.0f * c10;
     real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - c6 - c8 - c10 : 0;
