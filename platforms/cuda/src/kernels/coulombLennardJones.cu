@@ -9,7 +9,7 @@ const real invR8 = invR7*invR;
 const real invR9 = invR8*invR;
 const real invR10 = invR9*invR;
 
-const real r6 = r2*r2*r2;
+// const real r6 = r2*r2*r2;
 
 const real d = sigmaEpsilon1.y + sigmaEpsilon2.y;
 const real d2 = d*d;
@@ -90,7 +90,7 @@ real c10E = invR10 - expTerm * (
     d6 * d2 * 0.0000248015873 * invR2 +
     d6 * d2 * d * 0.000002755731922 * invR +
     d6 * d2 * d2 * 0.0000002755731922
-)
+);
 
 //const real rvdw = 0.376243f;
 #if USE_EWALD
