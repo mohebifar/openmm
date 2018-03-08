@@ -1675,7 +1675,7 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
     double sumSquaredCharges = 0.0;
     double sumSquaredC6 = 0.0;
     hasCoulomb = false;
-    hasLJ = false;
+    hasLJ = true;
     for (int i = 0; i < numParticles; i++) {
         double charge, sigma, epsilon, c6, c8, c10, c12, A, b;
         force.getParticleParametersDisp(i, charge, sigma, epsilon, c6, c8, c10, c12, A, b);
@@ -1684,14 +1684,14 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
         else
             posqf[i] = make_float4(0, 0, 0, (float) charge);
         double sig = 0.5*sigma;
-        double eps = 2.0*sqrt(epsilon);
+        double eps = 0.5*(epsilon);
 
         double sqC6 = sqrt(c6);
         double sqC8 = sqrt(c8);
         double sqC10 = sqrt(c10);
         double sqC12 = sqrt(c12);
-        double sqA = sqrt(A);
-        double sqB = sqrt(b);
+        double sqA = A;
+        double sqB = b;
 
         sigmaEpsilonVector[i] = make_float2(sig, eps);
         cACoefficientsVector[i] = make_float2(sqC6, sqC8);
@@ -2040,8 +2040,8 @@ void CudaCalcNonbondedForceKernel::initialize(const System& system, const Nonbon
     string source = cu.replaceStrings(CudaKernelSources::coulombLennardJones, defines);
     cu.getNonbondedUtilities().addInteraction(useCutoff, usePeriodic, true, force.getCutoffDistance(), exclusionList, source, force.getForceGroup(), true);
     if (hasLJ) {
-        // cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("sigmaEpsilon", "float", 2,
-        // sizeof(float2), sigmaEpsilon->getDevicePointer()));
+        cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("sigmaEpsilon", "float", 2,
+         sizeof(float2), sigmaEpsilon->getDevicePointer()));
 
         cu.getNonbondedUtilities().addParameter(CudaNonbondedUtilities::ParameterInfo("cACoefficients", "float", 2,
         sizeof(float2), cACoefficients->getDevicePointer()));
@@ -2295,14 +2295,14 @@ void CudaCalcNonbondedForceKernel::copyParametersToContext(ContextImpl& context,
         force.getParticleParametersDisp(i, charge, sigma, epsilon, c6, c8, c10, c12, A, b);
         chargeVector[i] = charge;
         double sig = (0.5*sigma);
-        double eps = (2.0*sqrt(epsilon));
+        double eps = (0.5*epsilon);
 
         double sqC6 = sqrt(c6);
         double sqC8 = sqrt(c8);
         double sqC10 = sqrt(c10);
         double sqC12 = sqrt(c12);
-        double sqA = sqrt(A);
-        double sqB = sqrt(B);
+        double sqA = A;
+        double sqB = b;
 
         sigmaEpsilonVector[i] = make_float2((float) sig, (float) eps);
         cACoefficientsVector[i] = make_float2((float) sqC6, (float) sqC8);

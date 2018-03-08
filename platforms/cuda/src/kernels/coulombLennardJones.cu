@@ -1,6 +1,9 @@
 {
 const real invR2 = invR*invR;
 const real invR6 = invR2*invR2*invR2;
+const real r6 = r2*r2*r2;
+
+//const real rvdw = 0.376243f;
 #if USE_EWALD
     bool needCorrection = hasExclusions && isExcluded && atom1 != atom2 && atom1 < NUM_ATOMS && atom2 < NUM_ATOMS;
     unsigned int includeInteraction = ((!isExcluded && r2 < CUTOFF_SQUARED) || needCorrection);
@@ -66,17 +69,41 @@ const real invR6 = invR2*invR2*invR2;
         // real eps = sigmaEpsilon1.y*sigmaEpsilon2.y;
         // real epssig6 = sig6*eps;
 
-        real c6 = cACoefficients1.x * cACoefficients2.x * invR6;
-        real c8 = cACoefficients1.y * cACoefficients2.y * invR6 * invR2;
-        real c10 = cBCoefficients1.x * cBCoefficients2.x * invR6 * invR2 * invR2;
+        real c6 = cACoefficients1.x * cACoefficients2.x;
+        real c8 = cACoefficients1.y * cACoefficients2.y;
+        real c10 = cBCoefficients1.x * cBCoefficients2.x;
         real c12 = cBCoefficients1.y * cBCoefficients2.y * invR6 * invR6;
 
+	real combinedA;
         real combinedB = buckingham1.y * buckingham2.y;
-        real buckinghamExp = -1 * combinedB * r;
-        real buckinghamRepulsion = (buckingham1.x * buckingham2.x) * EXP(buckinghamExp);
+	if (combinedB == 0.0f) {
+		combinedB = 0.0f;
+		combinedA = 0.0f;
+	} else {
+		combinedB = combinedB / (buckingham1.y + buckingham2.y);
+		combinedA = pow(buckingham1.x * buckingham1.y, 1.0f/buckingham1.y) * pow(buckingham2.x * buckingham2.y, 1.0f/buckingham2.y);
+		combinedA = pow(combinedA, combinedB) / (2.0f * combinedB);
+	}
+//	printf("SEC, B: %f, A: %f\n", combinedB, combinedA);
+        real buckinghamExp = -2.0f * combinedB * r;
+        real buckinghamRepulsion = combinedA * EXP(buckinghamExp);
+
+
+
+	real rvdw = sigmaEpsilon1.y + sigmaEpsilon2.y;
+	real rvdw2 = rvdw*rvdw;
+	real rvdw6 = rvdw2*rvdw2*rvdw2;
+
+	real c6D = 1.0/(r6+rvdw6);
+	real c8D = 1.0/(r6*r2 + rvdw6*rvdw2);
+	real c10D = 1.0/(r6*r2*r2 + rvdw6*rvdw2*rvdw2);
         
-        tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - 6.0f * c6 - 8.0f * c8 - 10.0f * c10;
-        real ljEnergy = buckinghamRepulsion + c12 - c6 - c8 - c10;
+        // tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - 6.0f * c6 - 8.0f * c8 - 10.0f * c10;
+        // real ljEnergy = buckinghamRepulsion + c12 - c6 - c8 - c10;
+
+	tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - (6.0f*c6*c6D*c6D*r6) - (8.0f*c8*c8D*c8D*r6*r2) - (10.0f*c10*c10D*c10D*r6*r2*r2);
+	real ljEnergy = buckinghamRepulsion + c12 - c6*c6D - c8*c8D - c10*c10D;
+
         #if USE_LJ_SWITCH
         if (r > LJ_SWITCH_CUTOFF) {
             real x = r-LJ_SWITCH_CUTOFF;
@@ -102,7 +129,7 @@ const real invR6 = invR2*invR2*invR2;
 
         // The additive part of the potential shift
         // ljEnergy += epssig6*(1.0f - sig6);
-        ljEnergy += buckinghamRepulsion + c12 - c6 - c8 - c10;
+        // ljEnergy += buckinghamRepulsion + c12 - c6 - c8 - c10;
         // The multiplicative part of the potential shift
         // ljEnergy += MULTSHIFT6*c6;
 #endif
@@ -130,17 +157,33 @@ const real invR6 = invR2*invR2*invR2;
     // tempForce = epssig6*(12.0f*sig6 - 6.0f);
     // real ljEnergy = includeInteraction ? epssig6*(sig6 - 1) : 0;
 
-    real c6 = cACoefficients1.x * cACoefficients2.x * invR6;
-    real c8 = cACoefficients1.y * cACoefficients2.y * invR6 * invR2;
-    real c10 = cBCoefficients1.x * cBCoefficients2.x * invR6 * invR2 * invR2;
+    real c6 = cACoefficients1.x * cACoefficients2.x;
+    real c8 = cACoefficients1.y * cACoefficients2.y;
+    real c10 = cBCoefficients1.x * cBCoefficients2.x;
     real c12 = cBCoefficients1.y * cBCoefficients2.y * invR6 * invR6;
 
     real combinedB = buckingham1.y * buckingham2.y;
-    real buckinghamExp = -1 * combinedB * r;
-    real buckinghamRepulsion = (buckingham1.x * buckingham2.x) * EXP(buckinghamExp);
-    
-    tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - 6.0f * c6 - 8.0f * c8 - 10.0f * c10;
-    real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - c6 - c8 - c10 : 0;
+    combinedB = combinedB == 0.0f ? 0.0f : combinedB / (buckingham1.y + buckingham2.y);
+    real combinedA = pow(buckingham1.x * buckingham1.y, 1.0f/buckingham1.y) * pow(buckingham2.x * buckingham2.y, 1.0f/buckingham2.y);
+    combinedA = pow(combinedA, combinedB) / (2.0f * combinedB);
+    printf("B: %f, A: %f\n", combinedB, combinedA);
+    real buckinghamExp = -2.0f * combinedB * r;
+    real buckinghamRepulsion = combinedA * EXP(buckinghamExp);
+
+
+    real rvdw = sigmaEpsilon1.y + sigmaEpsilon2.y;
+    real rvdw2 = rvdw*rvdw;
+    real rvdw6 = rvdw2*rvdw2*rvdw2;
+
+    real c6D = 1.0/(r6+rvdw6);
+    real c8D = 1.0/(r6*r2 + rvdw6*rvdw2);
+    real c10D = 1.0/(r6*r2*r2 + rvdw6*rvdw2*rvdw2);
+
+//    tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - 6.0f * c6 - 8.0f * c8 - 10.0f * c10;
+//    real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - c6 - c8 - c10 : 0;
+
+    tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - (6.0f*c6*c6D*c6D*r6) - (8.0f*c8*c8D*c8D*r6*r2) - (10.0f*c10*c10D*c10D*r6*r2*r2);
+    real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - c6*c6D - c8*c8D - c10*c10D : 0;
 
 
     #if USE_LJ_SWITCH
