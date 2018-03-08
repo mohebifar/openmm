@@ -25,7 +25,7 @@ real c6Deriv = invR6 - expTerm * (
     d * invR5  * (mdr - 5) +
     d2 * 0.5 * invR4 * (mdr - 4) +
     d3 * 0.1666666667 * invR3 * (mdr - 3) +
-    d2 * 0.04166666667 * invR2 * (mdr - 2) +
+    d2 * d2 * 0.04166666667 * invR2 * (mdr - 2) +
     d3 * d2 * 0.008333333333 * invR * (mdr - 1) +
     d6 * 0.001388888889 * mdr
 );
@@ -61,7 +61,7 @@ real c6E = invR6 - expTerm * (
     d * invR5 +
     d2 * 0.5 * invR4 +
     d3 * 0.1666666667 * invR3 +
-    d2 * 0.04166666667 * invR2 +
+    d2 * d2 * 0.04166666667 * invR2 +
     d3 * d2 * 0.008333333333 * invR +
     d6 * 0.001388888889
 );
