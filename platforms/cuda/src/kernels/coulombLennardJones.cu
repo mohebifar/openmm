@@ -20,7 +20,7 @@ const real mdr = -d * r;
 
 real expTerm = exp(mdr);
 
-real c6Deriv = c6 * invR6 - c6 * expTerm * (
+real c6Deriv = invR6 - expTerm * (
     invR6 * (mdr - 6) +
     d * invR5  * (mdr - 5) +
     d2 * 0.5 * invR4 * (mdr - 4) +
@@ -30,7 +30,7 @@ real c6Deriv = c6 * invR6 - c6 * expTerm * (
     d6 * 0.001388888889 * mdr
 );
 
-real c8Deriv = c8 * invR6 * invR2 - c8 * expTerm * (
+real c8Deriv = invR8 - expTerm * (
     invR8 * (mdr - 8) +
     d * invR7 * (mdr - 7) +
     d2 * 0.5 * invR6 * (mdr - 6) +
@@ -42,7 +42,7 @@ real c8Deriv = c8 * invR6 * invR2 - c8 * expTerm * (
     d6 * d2 * 0.0000248015873 * mdr
 );
 
-real c10Deriv = c10 * invR6 * invR2 * invR2 - c10 * expTerm * (
+real c10Deriv = invR10 - expTerm * (
     invR10 * (mdr - 10) +
     d * invR9 * (mdr -9 ) +
     d2 * 0.5 * invR8 * (mdr - 8) +
@@ -56,7 +56,7 @@ real c10Deriv = c10 * invR6 * invR2 * invR2 - c10 * expTerm * (
     d6 * d2 * d2 * 0.0000002755731922 * mdr
 );
 
-real c6E = c6 * invR6 - c6 * expTerm * (
+real c6E = invR6 - expTerm * (
     invR6 +
     d * invR5 +
     d2 * 0.5 * invR4 +
@@ -66,7 +66,7 @@ real c6E = c6 * invR6 - c6 * expTerm * (
     d6 * 0.001388888889
 );
 
-real c8E = c8 * invR6 * invR2 - c8 * expTerm * (
+real c8E = invR8 - expTerm * (
     invR8 +
     d * invR7 +
     d2 * 0.5 * invR6 +
@@ -78,7 +78,7 @@ real c8E = c8 * invR6 * invR2 - c8 * expTerm * (
     d6 * d2 * 0.0000248015873
 );
 
-real c10E = c10 * invR6 * invR2 * invR2 - c10 * expTerm * (
+real c10E = invR10 - expTerm * (
     invR10 +
     d * invR9 +
     d2 * 0.5 * invR8 +
@@ -194,8 +194,8 @@ real c10E = c10 * invR6 * invR2 * invR2 - c10 * expTerm * (
         // 0.000002755731922, 0.0000002755731922 
         
 
-    	tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - c6Deriv - c8Deriv - c10Deriv;
-    	real ljEnergy = buckinghamRepulsion + c12 - c6E - c8E -c10E;
+    	tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - c6Deriv * c6 - c8Deriv * c8 - c10Deriv * c10;
+    	real ljEnergy = buckinghamRepulsion + c12 - c6E * c6 - c8E * c8 -c10E * c10;
 
         #if USE_LJ_SWITCH
         if (r > LJ_SWITCH_CUTOFF) {
@@ -275,8 +275,8 @@ real c10E = c10 * invR6 * invR2 * invR2 - c10 * expTerm * (
 //    tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - 6.0f * c6 - 8.0f * c8 - 10.0f * c10;
 //    real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - c6 - c8 - c10 : 0;
 
-    tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - c6Deriv - c8Deriv - c10Deriv;
-    real ljEnergy = includeInteraction buckinghamRepulsion + c12 - c6E - c8E -c10E : 0;
+    tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - c6Deriv *c6 - c8Deriv * c8 - c10Deriv * c10;
+    real ljEnergy = includeInteraction buckinghamRepulsion + c12 - c6E * c6 - c8E *c8 -c10E * c10 : 0;
 
 
     #if USE_LJ_SWITCH
