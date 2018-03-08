@@ -1,7 +1,96 @@
 {
 const real invR2 = invR*invR;
-const real invR6 = invR2*invR2*invR2;
+const real invR3 = invR2*invR;
+const real invR4 = invR3*invR;
+const real invR5 = invR4*invR;
+const real invR6 = invR5*invR;
+const real invR7 = invR6*invR;
+const real invR8 = invR7*invR;
+const real invR9 = invR8*invR;
+const real invR10 = invR9*invR;
+
 const real r6 = r2*r2*r2;
+
+const real d = sigmaEpsilon1.y + sigmaEpsilon2.y;
+const real d2 = d*d;
+const real d3 = d2*d;
+const real d6 = d3*d3;
+
+const real mdr = -d * r;
+
+real expTerm = exp(mdr);
+
+real c6Deriv = c6 * invR6 - c6 * expTerm * (
+    invR6 * (mdr - 6) +
+    d * invR5  * (mdr - 5) +
+    d2 * 0.5 * invR4 * (mdr - 4) +
+    d3 * 0.1666666667 * invR3 * (mdr - 3) +
+    d2 * 0.04166666667 * invR2 * (mdr - 2) +
+    d3 * d2 * 0.008333333333 * invR1 * (mdr - 1) +
+    d6 * 0.001388888889 * mdr
+);
+
+real c8Deriv = c8 * invR6 * invR2 - c8 * expTerm * (
+    invR8 * (mdr - 8) +
+    d * invR7 * (mdr - 7) +
+    d2 * 0.5 * invR6 * (mdr - 6) +
+    d3 * 0.1666666667 * invR5 * (mdr - 5) +
+    d2 * d2 * 0.04166666667 * invR4 * (mdr - 4) +
+    d3 * d2 * 0.008333333333 * invR3 * (mdr - 3) +
+    d6 * 0.001388888889 * invR2 * (mdr - 2) +
+    d6 * d * 0.0001984126984 * invR1 * (mdr - 1) +
+    d6 * d2 * 0.0000248015873 * mdr
+);
+
+real c10Deriv = c10 * invR6 * invR2 * invR2 - c10 * expTerm * (
+    invR10 * (mdr - 10) +
+    d * invR9 * (mdr -9 ) +
+    d2 * 0.5 * invR8 * (mdr - 8) +
+    d3 * 0.1666666667 * invR7 * (mdr - 7) +
+    d2 * d2 * 0.04166666667 * invR6 * (mdr - 6) +
+    d3 * d2 * 0.008333333333 * invR5 * (mdr - 5) +
+    d6 * 0.001388888889 * invR4 * (mdr - 4) +
+    d6 * d * 0.0001984126984 * invR3 * (mdr - 3) +
+    d6 * d2 * 0.0000248015873 * invR2 * (mdr - 2) +
+    d6 * d2 * d * 0.000002755731922 * invR1 * (mdr - 1) +
+    d6 * d2 * d2 * 0.0000002755731922 * mdr
+);
+
+real c6E = c6 * invR6 - c6 * expTerm * (
+    invR6 +
+    d * invR5 +
+    d2 * 0.5 * invR4 +
+    d3 * 0.1666666667 * invR3 +
+    d2 * 0.04166666667 * invR2 +
+    d3 * d2 * 0.008333333333 * invR1 +
+    d6 * 0.001388888889
+);
+
+real c8E = c8 * invR6 * invR2 - c8 * expTerm * (
+    invR8 +
+    d * invR7 +
+    d2 * 0.5 * invR6 +
+    d3 * 0.1666666667 * invR5 +
+    d2 * d2 * 0.04166666667 * invR4 +
+    d3 * d2 * 0.008333333333 * invR3 +
+    d6 * 0.001388888889 * invR2 +
+    d6 * d * 0.0001984126984 * invR1 +
+    d6 * d2 * 0.0000248015873
+);
+
+real c10E = c10 * invR6 * invR2 * invR2 - c10 * expTerm * (
+    invR10 +
+    d * invR9 +
+    d2 * 0.5 * invR8 +
+    d3 * 0.1666666667 * invR7 +
+    d2 * d2 * 0.04166666667 * invR6 +
+    d3 * d2 * 0.008333333333 * invR5 +
+    d6 * 0.001388888889 * invR4 +
+    d6 * d * 0.0001984126984 * invR3 +
+    d6 * d2 * 0.0000248015873 * invR2 +
+    d6 * d2 * d * 0.000002755731922 * invR1 +
+    d6 * d2 * d2 * 0.0000002755731922
+)
 
 //const real rvdw = 0.376243f;
 #if USE_EWALD
@@ -89,19 +178,24 @@ const real r6 = r2*r2*r2;
         real buckinghamExp = -2.0f * combinedB * r;
         real buckinghamRepulsion = combinedA * EXP(buckinghamExp);
 
-    	real rvdw = sigmaEpsilon1.y + sigmaEpsilon2.y;
-    	real rvdw2 = rvdw*rvdw;
-    	real rvdw6 = rvdw2*rvdw2*rvdw2;
+    	// real rvdw = sigmaEpsilon1.y + sigmaEpsilon2.y;
+    	// real rvdw2 = rvdw*rvdw;
+    	// real rvdw6 = rvdw2*rvdw2*rvdw2;
 
-    	real c6D = 1.0/(r6+rvdw6);
-    	real c8D = 1.0/(r6*r2 + rvdw6*rvdw2);
-    	real c10D = 1.0/(r6*r2*r2 + rvdw6*rvdw2*rvdw2);
+    	// real c6D = 1.0/(r6 + rvdw6);
+    	// real c8D = 1.0/(r6*r2 + rvdw6*rvdw2);
+    	// real c10D = 1.0/(r6*r2*r2 + rvdw6*rvdw2*rvdw2);
 
         // tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - 6.0f * c6 - 8.0f * c8 - 10.0f * c10;
         // real ljEnergy = buckinghamRepulsion + c12 - c6 - c8 - c10;
+        // ======== Tang Toennis start ========
+        // 1, 1, 0.5, 0.1666666667, 0.04166666667
+        // 0.008333333333, 0.001388888889, 0.0001984126984, 0.0000248015873
+        // 0.000002755731922, 0.0000002755731922 
+        
 
-    	tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - (6.0f*c6*c6D*c6D*r6) - (8.0f*c8*c8D*c8D*r6*r2) - (10.0f*c10*c10D*c10D*r6*r2*r2);
-    	real ljEnergy = buckinghamRepulsion + c12 - c6*c6D - c8*c8D - c10*c10D;
+    	tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - c6Deriv - c8Deriv - c10Deriv;
+    	real ljEnergy = buckinghamRepulsion + c12 - c6E - c8E -c10E;
 
         #if USE_LJ_SWITCH
         if (r > LJ_SWITCH_CUTOFF) {
@@ -170,19 +264,19 @@ const real r6 = r2*r2*r2;
     real buckinghamRepulsion = combinedA * EXP(buckinghamExp);
 
 
-    real rvdw = sigmaEpsilon1.y + sigmaEpsilon2.y;
-    real rvdw2 = rvdw*rvdw;
-    real rvdw6 = rvdw2*rvdw2*rvdw2;
+    // real rvdw = sigmaEpsilon1.y + sigmaEpsilon2.y;
+    // real rvdw2 = rvdw*rvdw;
+    // real rvdw6 = rvdw2*rvdw2*rvdw2;
 
-    real c6D = 1.0/(r6+rvdw6);
-    real c8D = 1.0/(r6*r2 + rvdw6*rvdw2);
-    real c10D = 1.0/(r6*r2*r2 + rvdw6*rvdw2*rvdw2);
+    // real c6D = 1.0/(r6+rvdw6);
+    // real c8D = 1.0/(r6*r2 + rvdw6*rvdw2);
+    // real c10D = 1.0/(r6*r2*r2 + rvdw6*rvdw2*rvdw2);
 
 //    tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - 6.0f * c6 - 8.0f * c8 - 10.0f * c10;
 //    real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - c6 - c8 - c10 : 0;
 
-    tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - (6.0f*c6*c6D*c6D*r6) - (8.0f*c8*c8D*c8D*r6*r2) - (10.0f*c10*c10D*c10D*r6*r2*r2);
-    real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - c6*c6D - c8*c8D - c10*c10D : 0;
+    tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - c6Deriv - c8Deriv - c10Deriv;
+    real ljEnergy = includeInteraction buckinghamRepulsion + c12 - c6E - c8E -c10E : 0;
 
 
     #if USE_LJ_SWITCH
