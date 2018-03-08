@@ -276,7 +276,7 @@ real c10E = invR10 - expTerm * (
 //    real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - c6 - c8 - c10 : 0;
 
     tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - c6Deriv *c6 - c8Deriv * c8 - c10Deriv * c10;
-    real ljEnergy = includeInteraction buckinghamRepulsion + c12 - c6E * c6 - c8E *c8 -c10E * c10 : 0;
+    real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - c6E * c6 - c8E *c8 -c10E * c10 : 0;
 
 
     #if USE_LJ_SWITCH
