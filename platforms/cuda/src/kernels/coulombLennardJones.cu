@@ -20,39 +20,39 @@ const real mdr = -d * r;
 
 real expTerm = exp(mdr);
 
-real c6Deriv = invR6 - expTerm * (
-    invR6 * (mdr - 6) +
-    d * invR5  * (mdr - 5) +
-    d2 * 0.5 * invR4 * (mdr - 4) +
-    d3 * 0.1666666667 * invR3 * (mdr - 3) +
-    d2 * d2 * 0.04166666667 * invR2 * (mdr - 2) +
-    d3 * d2 * 0.008333333333 * invR * (mdr - 1) +
+real c6Deriv = 6.0 * invR6 - expTerm * (
+    invR6 * (mdr - 6.0) +
+    d * invR5  * (mdr - 5.0) +
+    d2 * 0.5 * invR4 * (mdr - 4.0) +
+    d3 * 0.1666666667 * invR3 * (mdr - 3.0) +
+    d2 * d2 * 0.04166666667 * invR2 * (mdr - 2.0) +
+    d3 * d2 * 0.008333333333 * invR * (mdr - 1.0) +
     d6 * 0.001388888889 * mdr
 );
 
-real c8Deriv = invR8 - expTerm * (
-    invR8 * (mdr - 8) +
-    d * invR7 * (mdr - 7) +
-    d2 * 0.5 * invR6 * (mdr - 6) +
-    d3 * 0.1666666667 * invR5 * (mdr - 5) +
-    d2 * d2 * 0.04166666667 * invR4 * (mdr - 4) +
-    d3 * d2 * 0.008333333333 * invR3 * (mdr - 3) +
-    d6 * 0.001388888889 * invR2 * (mdr - 2) +
-    d6 * d * 0.0001984126984 * invR * (mdr - 1) +
+real c8Deriv = 8.0 * invR8 - expTerm * (
+    invR8 * (mdr - 8.0) +
+    d * invR7 * (mdr - 7.0) +
+    d2 * 0.5 * invR6 * (mdr - 6.0) +
+    d3 * 0.1666666667 * invR5 * (mdr - 5.0) +
+    d2 * d2 * 0.04166666667 * invR4 * (mdr - 4.0) +
+    d3 * d2 * 0.008333333333 * invR3 * (mdr - 3.0) +
+    d6 * 0.001388888889 * invR2 * (mdr - 2.0) +
+    d6 * d * 0.0001984126984 * invR * (mdr - 1.0) +
     d6 * d2 * 0.0000248015873 * mdr
 );
 
-real c10Deriv = invR10 - expTerm * (
-    invR10 * (mdr - 10) +
-    d * invR9 * (mdr -9 ) +
-    d2 * 0.5 * invR8 * (mdr - 8) +
-    d3 * 0.1666666667 * invR7 * (mdr - 7) +
-    d2 * d2 * 0.04166666667 * invR6 * (mdr - 6) +
-    d3 * d2 * 0.008333333333 * invR5 * (mdr - 5) +
-    d6 * 0.001388888889 * invR4 * (mdr - 4) +
-    d6 * d * 0.0001984126984 * invR3 * (mdr - 3) +
-    d6 * d2 * 0.0000248015873 * invR2 * (mdr - 2) +
-    d6 * d2 * d * 0.000002755731922 * invR * (mdr - 1) +
+real c10Deriv = 10.0 * invR10 - expTerm * (
+    invR10 * (mdr - 10.0) +
+    d * invR9 * (mdr -9.0) +
+    d2 * 0.5 * invR8 * (mdr - 8.0) +
+    d3 * 0.1666666667 * invR7 * (mdr - 7.0) +
+    d2 * d2 * 0.04166666667 * invR6 * (mdr - 6.0) +
+    d3 * d2 * 0.008333333333 * invR5 * (mdr - 5.0) +
+    d6 * 0.001388888889 * invR4 * (mdr - 4.0) +
+    d6 * d * 0.0001984126984 * invR3 * (mdr - 3.0) +
+    d6 * d2 * 0.0000248015873 * invR2 * (mdr - 2.0) +
+    d6 * d2 * d * 0.000002755731922 * invR * (mdr - 1.0) +
     d6 * d2 * d2 * 0.0000002755731922 * mdr
 );
 
