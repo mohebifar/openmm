@@ -20,17 +20,17 @@ const real mdr = -d * r;
 
 real expTerm = exp(mdr);
 
-real c6Deriv = 6.0 * invR6 - expTerm * (
+real c6Deriv = 6.0 * invR6 + expTerm * (
     invR6 * (mdr - 6.0) +
     d * invR5  * (mdr - 5.0) +
     d2 * 0.5 * invR4 * (mdr - 4.0) +
     d3 * 0.1666666667 * invR3 * (mdr - 3.0) +
     d2 * d2 * 0.04166666667 * invR2 * (mdr - 2.0) +
     d3 * d2 * 0.008333333333 * invR * (mdr - 1.0) +
-    d6 * 0.001388888889 * mdr
+    d6 * 0.001388888889 * (mdr)
 );
 
-real c8Deriv = 8.0 * invR8 - expTerm * (
+real c8Deriv = 8.0 * invR8 + expTerm * (
     invR8 * (mdr - 8.0) +
     d * invR7 * (mdr - 7.0) +
     d2 * 0.5 * invR6 * (mdr - 6.0) +
@@ -39,10 +39,10 @@ real c8Deriv = 8.0 * invR8 - expTerm * (
     d3 * d2 * 0.008333333333 * invR3 * (mdr - 3.0) +
     d6 * 0.001388888889 * invR2 * (mdr - 2.0) +
     d6 * d * 0.0001984126984 * invR * (mdr - 1.0) +
-    d6 * d2 * 0.0000248015873 * mdr
+    d6 * d2 * 0.0000248015873 * (mdr)
 );
 
-real c10Deriv = 10.0 * invR10 - expTerm * (
+real c10Deriv = 10.0 * invR10 + expTerm * (
     invR10 * (mdr - 10.0) +
     d * invR9 * (mdr -9.0) +
     d2 * 0.5 * invR8 * (mdr - 8.0) +
@@ -53,7 +53,7 @@ real c10Deriv = 10.0 * invR10 - expTerm * (
     d6 * d * 0.0001984126984 * invR3 * (mdr - 3.0) +
     d6 * d2 * 0.0000248015873 * invR2 * (mdr - 2.0) +
     d6 * d2 * d * 0.000002755731922 * invR * (mdr - 1.0) +
-    d6 * d2 * d2 * 0.0000002755731922 * mdr
+    d6 * d2 * d2 * 0.0000002755731922 * (mdr)
 );
 
 real c6E = invR6 - expTerm * (
@@ -163,7 +163,7 @@ real c10E = invR10 - expTerm * (
         real c10 = cBCoefficients1.x * cBCoefficients2.x;
         real c12 = cBCoefficients1.y * cBCoefficients2.y * invR6 * invR6;
 
-	    real combinedA;
+	real combinedA;
         real combinedB = buckingham1.y * buckingham2.y;
 
         if (combinedB == 0.0f) {
@@ -174,28 +174,15 @@ real c10E = invR10 - expTerm * (
             combinedA = pow(buckingham1.x * buckingham1.y, 1.0f/buckingham1.y) * pow(buckingham2.x * buckingham2.y, 1.0f/buckingham2.y);
             combinedA = pow(combinedA, combinedB) / (2.0f * combinedB);
         }
-        //	printf("SEC, B: %f, A: %f\n", combinedB, combinedA);
         real buckinghamExp = -2.0f * combinedB * r;
         real buckinghamRepulsion = combinedA * EXP(buckinghamExp);
 
-    	// real rvdw = sigmaEpsilon1.y + sigmaEpsilon2.y;
-    	// real rvdw2 = rvdw*rvdw;
-    	// real rvdw6 = rvdw2*rvdw2*rvdw2;
-
-    	// real c6D = 1.0/(r6 + rvdw6);
-    	// real c8D = 1.0/(r6*r2 + rvdw6*rvdw2);
-    	// real c10D = 1.0/(r6*r2*r2 + rvdw6*rvdw2*rvdw2);
-
-        // tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - 6.0f * c6 - 8.0f * c8 - 10.0f * c10;
-        // real ljEnergy = buckinghamRepulsion + c12 - c6 - c8 - c10;
-        // ======== Tang Toennis start ========
-        // 1, 1, 0.5, 0.1666666667, 0.04166666667
-        // 0.008333333333, 0.001388888889, 0.0001984126984, 0.0000248015873
-        // 0.000002755731922, 0.0000002755731922 
-        
-
-    	tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - c6Deriv * c6 - c8Deriv * c8 - c10Deriv * c10;
+    	tempForce = -buckinghamExp * buckinghamRepulsion + 12.0f * c12 - c6Deriv * c6 - c8Deriv * c8 - c10Deriv * c10;
     	real ljEnergy = buckinghamRepulsion + c12 - c6E * c6 - c8E * c8 -c10E * c10;
+
+//	if (combinedB != 0.0f) {
+//		printf("SEC, r: %f, Force: %f, Energy: %f, rep: %f \n", r, tempForce, ljEnergy, buckinghamRepulsion);
+//	}
 
         #if USE_LJ_SWITCH
         if (r > LJ_SWITCH_CUTOFF) {
@@ -255,27 +242,22 @@ real c10E = invR10 - expTerm * (
     real c10 = cBCoefficients1.x * cBCoefficients2.x;
     real c12 = cBCoefficients1.y * cBCoefficients2.y * invR6 * invR6;
 
-    real combinedB = buckingham1.y * buckingham2.y;
-    combinedB = combinedB == 0.0f ? 0.0f : combinedB / (buckingham1.y + buckingham2.y);
-    real combinedA = pow(buckingham1.x * buckingham1.y, 1.0f/buckingham1.y) * pow(buckingham2.x * buckingham2.y, 1.0f/buckingham2.y);
-    combinedA = pow(combinedA, combinedB) / (2.0f * combinedB);
     // printf("B: %f, A: %f\n", combinedB, combinedA);
+    real combinedA;
+    real combinedB = buckingham1.y * buckingham2.y;
+
+    if (combinedB == 0.0f) {
+	    combinedB = 0.0f;
+	    combinedA = 0.0f;
+    } else {
+	    combinedB = combinedB / (buckingham1.y + buckingham2.y);
+	    combinedA = pow(buckingham1.x * buckingham1.y, 1.0f/buckingham1.y) * pow(buckingham2.x * buckingham2.y, 1.0f/buckingham2.y);
+	    combinedA = pow(combinedA, combinedB) / (2.0f * combinedB);
+    }
     real buckinghamExp = -2.0f * combinedB * r;
     real buckinghamRepulsion = combinedA * EXP(buckinghamExp);
 
-
-    // real rvdw = sigmaEpsilon1.y + sigmaEpsilon2.y;
-    // real rvdw2 = rvdw*rvdw;
-    // real rvdw6 = rvdw2*rvdw2*rvdw2;
-
-    // real c6D = 1.0/(r6+rvdw6);
-    // real c8D = 1.0/(r6*r2 + rvdw6*rvdw2);
-    // real c10D = 1.0/(r6*r2*r2 + rvdw6*rvdw2*rvdw2);
-
-//    tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - 6.0f * c6 - 8.0f * c8 - 10.0f * c10;
-//    real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - c6 - c8 - c10 : 0;
-
-    tempForce = buckinghamRepulsion * combinedB * r + 12.0f * c12 - c6Deriv *c6 - c8Deriv * c8 - c10Deriv * c10;
+    tempForce = -buckinghamExp * buckinghamRepulsion + 12.0f * c12 - c6Deriv *c6 - c8Deriv * c8 - c10Deriv * c10;
     real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - c6E * c6 - c8E *c8 -c10E * c10 : 0;
 
 
