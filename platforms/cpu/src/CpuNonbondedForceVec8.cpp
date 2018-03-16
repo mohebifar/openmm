@@ -183,35 +183,95 @@ void CpuNonbondedForceVec8::calculateBlockIxnImpl(int blockIndex, float* forces,
         
         // Compute the interactions.
         
-        fvec8 inverseR = rsqrt(r2);
+        fvec8 invR = rsqrt(r2);
         // BUCK-C12
-        fvec8 inverseR2 = inverseR * inverseR;
-        fvec8 inverseR6 = inverseR2 * inverseR2 * inverseR2;
+        fvec8 invR2 = invR * invR;
+        fvec8 invR3 = invR2 * invR;
+        fvec8 invR4 = invR3 * invR;
+        fvec8 invR5 = invR4 * invR;
+        fvec8 invR6 = invR5 * invR;
+        fvec8 invR7 = invR6 * invR;
+        fvec8 invR8 = invR7 * invR;
+        fvec8 invR9 = invR8 * invR;
+        fvec8 invR10 = invR9 * invR;
+
+        fvec8 d = atomParameters[atom].second + blockAtomEpsilon;
+        fvec8 d2 = d * d * 0.5f;
+        fvec8 d3 = d2 * d * 0.3333333333f;
+        fvec8 d4 = d3 * d * 0.25f;
+        fvec8 d5 = d4 * d * 0.2f;
+        fvec8 d6 = d5 * d * 0.1666666667f;
+        fvec8 d7 = d6 * d * 0.1428571429f;
+        fvec8 d8 = d7 * d * 0.125f;
+        fvec8 d9 = d8 * d * 0.1111111111f;
+        fvec8 d10 = d9 * d * 0.1f;
         
-        fvec8 _c6 = C6params[atom] * inverseR6;
-        fvec8 _c8 = C8params[atom] * inverseR6 * inverseR2;
-        fvec8 _c10 = C10params[atom] * inverseR6 * inverseR2 * inverseR2;
-        fvec8 _c12 = C12params[atom] * inverseR6 * inverseR6;
-        
-        fvec8 r = r2*inverseR;
+        fvec8 _c6 = C6params[atom] * C6s;
+        fvec8 _c8 = C8params[atom] * C8s;
+        fvec8 _c10 = C10params[atom] * C10s;
+        fvec8 _c12 = C12params[atom] * C12s * invR6 * invR6;
+
+        fvec8 r = r2 * invR;
+        fvec8 mdr = -d * r;
+
+        fvec8 expTerm = exp(mdr);
+
+        fvec8 c6Deriv = 6.0f * invR6 +
+                        expTerm * (invR6 * (mdr - 6.0f) +
+                                   d * invR5 * (mdr - 5.0f) +
+                                   d2 * invR4 * (mdr - 4.0f) +
+                                   d3 * invR3 * (mdr - 3.0f) +
+                                   d4 * invR2 * (mdr - 2.0f) +
+                                   d5 * invR * (mdr - 1.0f) +
+                                   d6 * mdr);
+
+        fvec8 c8Deriv = 8.0f * invR8 +
+                        expTerm * (invR8 * (mdr - 8.0f) +
+                                   d * invR7 * (mdr - 7.0f) +
+                                   d2 * invR6 * (mdr - 6.0f) +
+                                   d3 * invR5 * (mdr - 5.0f) +
+                                   d4 * invR4 * (mdr - 4.0f) +
+                                   d5 * invR3 * (mdr - 3.0f) +
+                                   d6 * invR2 * (mdr - 2.0f) +
+                                   d7 * invR * (mdr - 1.0f) +
+                                   d8 * mdr);
+
+        fvec8 c10Deriv = 10.0f * invR10 +
+                         expTerm * (invR10 * (mdr - 10.0f) +
+                                    d * invR9 * (mdr - 9.0f) +
+                                    d2 * invR8 * (mdr - 8.0f) +
+                                    d3 * invR7 * (mdr - 7.0f) +
+                                    d4 * invR6 * (mdr - 6.0f) +
+                                    d5 * invR5 * (mdr - 5.0f) +
+                                    d6 * invR4 * (mdr - 4.0f) +
+                                    d7 * invR3 * (mdr - 3.0f) +
+                                    d8 * invR2 * (mdr - 2.0f) +
+                                    d9 * invR * (mdr - 1.0f) +
+                                    d10 * mdr);
+
+        fvec8 c6E = invR6 - expTerm * (invR6 + d * invR5 + d2 * invR4 + d3 * invR3 + d4 * invR2 + d5 * invR + d6);
+        fvec8 c8E = invR8 - expTerm * (invR8 + d * invR7 + d2 * invR6 + d3 * invR5 + d4 * invR4 + d5 * invR3 + d6 * invR2 + d7 * invR + d8);
+        fvec8 c10E = invR10 - expTerm * (invR10 + d * invR9 + d2 * invR8 + d3 * invR7 + d4 * invR6 + d5 * invR5 + d6 * invR4 + d7 * invR3 + d8 * invR2 + d9 * invR + d10);
 
         fvec8 buckRepulsionCombinedB = Bparams[atom] * Bs;
-        fvec8 buckRepulsionExp = -1 * buckRepulsionCombinedB * r;
-        fvec8 buckRepulsion = Aparams[atom] * As * exp(buckRepulsionExp);
+        fvec8 buckRepulsionExp = buckRepulsionCombinedB * r;
+        fvec8 buckRepulsion = Aparams[atom] * As * exp(-buckRepulsionExp);
 
         fvec8 energy, dEdR;
         // float atomEpsilon = atomParameters[atom].second;
         // if (atomEpsilon != 0.0f) {
         //     fvec8 sig = blockAtomSigma+atomParameters[atom].first;
-        //     fvec8 sig2 = inverseR*sig;
+        //     fvec8 sig2 = invR*sig;
         //     sig2 *= sig2;
         //     fvec8 sig6 = sig2*sig2*sig2;
         //     fvec8 epsSig6 = blockAtomEpsilon*atomEpsilon*sig6;
         //     dEdR = epsSig6*(12.0f*sig6 - 6.0f);
         //     energy = epsSig6*(sig6-1.0f);
 
-            dEdR = r * buckRepulsionCombinedB * buckRepulsion + 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
-            energy = buckRepulsion + (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
+            dEdR = buckRepulsionExp * buckRepulsion + 12.0f * _c12 - 6.0f * (_c6 * C6Deriv) - 8.0f * (_c8 * C8Deriv) - 10.0f * (_c10 * C10Deriv);
+            energy = buckRepulsion + _c12 - (_c6 * c6E) - (_c8 * c8E) - (_c10 * c10E);
+            // dEdR = buckRepulsionExp * buckRepulsion + 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
+            // energy = buckRepulsion + (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
 
             if (useSwitch) {
                 fvec8 t = (r>switchingDistance) & ((r-switchingDistance)*invSwitchingInterval);
@@ -227,19 +287,19 @@ void CpuNonbondedForceVec8::calculateBlockIxnImpl(int blockIndex, float* forces,
         // }
         fvec8 chargeProd = blockAtomCharge*posq[4*atom+3];
         if (cutoff)
-            dEdR += chargeProd*(inverseR-2.0f*krf*r2);
+            dEdR += chargeProd*(invR-2.0f*krf*r2);
         else
-            dEdR += chargeProd*inverseR;
-        dEdR *= inverseR2;
+            dEdR += chargeProd*invR;
+        dEdR *= invR2;
 
         // Accumulate energies.
 
         fvec8 one(1.0f);
         if (totalEnergy) {
             if (cutoff)
-                energy += chargeProd*(inverseR+krf*r2-crf);
+                energy += chargeProd*(invR+krf*r2-crf);
             else
-                energy += chargeProd*inverseR;
+                energy += chargeProd*invR;
             energy = blend(0.0f, energy, include);
             *totalEnergy += dot8(energy, one);
         }
@@ -370,28 +430,85 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
         
         // Compute the interactions.
         
-        fvec8 inverseR = rsqrt(r2);
-        
+        fvec8 invR = rsqrt(r2);
         // BUCK-C12
-        fvec8 inverseR2 = inverseR * inverseR;
-        fvec8 inverseR6 = inverseR2 * inverseR2 * inverseR2;
-        
-        fvec8 _c6 = C6params[atom] * inverseR6;
-        fvec8 _c8 = C8params[atom] * inverseR6 * inverseR2;
-        fvec8 _c10 = C10params[atom] * inverseR6 * inverseR2 * inverseR2;
-        fvec8 _c12 = C12params[atom] * inverseR6 * inverseR6;
+        fvec8 invR2 = invR * invR;
+        fvec8 invR3 = invR2 * invR;
+        fvec8 invR4 = invR3 * invR;
+        fvec8 invR5 = invR4 * invR;
+        fvec8 invR6 = invR5 * invR;
+        fvec8 invR7 = invR6 * invR;
+        fvec8 invR8 = invR7 * invR;
+        fvec8 invR9 = invR8 * invR;
+        fvec8 invR10 = invR9 * invR;
 
-        fvec8 r = r2*inverseR;
+        fvec8 d = atomParameters[atom].second + blockAtomEpsilon;
+        fvec8 d2 = d * d * 0.5f;
+        fvec8 d3 = d2 * d * 0.3333333333f;
+        fvec8 d4 = d3 * d * 0.25f;
+        fvec8 d5 = d4 * d * 0.2f;
+        fvec8 d6 = d5 * d * 0.1666666667f;
+        fvec8 d7 = d6 * d * 0.1428571429f;
+        fvec8 d8 = d7 * d * 0.125f;
+        fvec8 d9 = d8 * d * 0.1111111111f;
+        fvec8 d10 = d9 * d * 0.1f;
+        
+        fvec8 _c6 = C6params[atom] * C6s;
+        fvec8 _c8 = C8params[atom] * C8s;
+        fvec8 _c10 = C10params[atom] * C10s;
+        fvec8 _c12 = C12params[atom] * C12s * invR6 * invR6;
+
+        fvec8 r = r2 * invR;
+        fvec8 mdr = -d * r;
+
+        fvec8 expTerm = exp(mdr);
+
+        fvec8 c6Deriv = 6.0f * invR6 +
+                        expTerm * (invR6 * (mdr - 6.0f) +
+                                   d * invR5 * (mdr - 5.0f) +
+                                   d2 * invR4 * (mdr - 4.0f) +
+                                   d3 * invR3 * (mdr - 3.0f) +
+                                   d4 * invR2 * (mdr - 2.0f) +
+                                   d5 * invR * (mdr - 1.0f) +
+                                   d6 * mdr);
+
+        fvec8 c8Deriv = 8.0f * invR8 +
+                        expTerm * (invR8 * (mdr - 8.0f) +
+                                   d * invR7 * (mdr - 7.0f) +
+                                   d2 * invR6 * (mdr - 6.0f) +
+                                   d3 * invR5 * (mdr - 5.0f) +
+                                   d4 * invR4 * (mdr - 4.0f) +
+                                   d5 * invR3 * (mdr - 3.0f) +
+                                   d6 * invR2 * (mdr - 2.0f) +
+                                   d7 * invR * (mdr - 1.0f) +
+                                   d8 * mdr);
+
+        fvec8 c10Deriv = 10.0f * invR10 +
+                         expTerm * (invR10 * (mdr - 10.0f) +
+                                    d * invR9 * (mdr - 9.0f) +
+                                    d2 * invR8 * (mdr - 8.0f) +
+                                    d3 * invR7 * (mdr - 7.0f) +
+                                    d4 * invR6 * (mdr - 6.0f) +
+                                    d5 * invR5 * (mdr - 5.0f) +
+                                    d6 * invR4 * (mdr - 4.0f) +
+                                    d7 * invR3 * (mdr - 3.0f) +
+                                    d8 * invR2 * (mdr - 2.0f) +
+                                    d9 * invR * (mdr - 1.0f) +
+                                    d10 * mdr);
+
+        fvec8 c6E = invR6 - expTerm * (invR6 + d * invR5 + d2 * invR4 + d3 * invR3 + d4 * invR2 + d5 * invR + d6);
+        fvec8 c8E = invR8 - expTerm * (invR8 + d * invR7 + d2 * invR6 + d3 * invR5 + d4 * invR4 + d5 * invR3 + d6 * invR2 + d7 * invR + d8);
+        fvec8 c10E = invR10 - expTerm * (invR10 + d * invR9 + d2 * invR8 + d3 * invR7 + d4 * invR6 + d5 * invR5 + d6 * invR4 + d7 * invR3 + d8 * invR2 + d9 * invR + d10);
 
         fvec8 buckRepulsionCombinedB = Bparams[atom] * Bs;
-        fvec8 buckRepulsionExp = -1 * buckRepulsionCombinedB * r;
-        fvec8 buckRepulsion = Aparams[atom] * As * exp(buckRepulsionExp);
+        fvec8 buckRepulsionExp = buckRepulsionCombinedB * r;
+        fvec8 buckRepulsion = Aparams[atom] * As * exp(-buckRepulsionExp);
 
         fvec8 energy, dEdR;
         // float atomEpsilon = atomParameters[atom].second;
         // if (atomEpsilon != 0.0f) {
         //     fvec8 sig = blockAtomSigma+atomParameters[atom].first;
-        //     fvec8 sig2 = inverseR*sig;
+        //     fvec8 sig2 = invR*sig;
         //     sig2 *= sig2;
         //     fvec8 sig6 = sig2*sig2*sig2;
         //     fvec8 eps = blockAtomEpsilon*atomEpsilon;
@@ -402,8 +519,10 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
             // fvec8 t_dEdR = epsSig6*(12.0f*sig6 - 6.0f);
             // fvec8 t_energy = epsSig6*(sig6-1.0f);
 
-            dEdR = r * buckRepulsion * buckRepulsionCombinedB + 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
-            energy = buckRepulsion + (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
+            dEdR = buckRepulsionExp * buckRepulsion + 12.0f * _c12 - 6.0f * (_c6 * C6Deriv) - 8.0f * (_c8 * C8Deriv) - 10.0f * (_c10 * C10Deriv);
+            energy = buckRepulsion + _c12 - (_c6 * c6E) - (_c8 * c8E) - (_c10 * c10E);
+            // dEdR = r * buckRepulsion * buckRepulsionCombinedB + 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
+            // energy = buckRepulsion + (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
 
             // float a = t_dEdR->val[0];
             // float b = dEdR->val[0];
@@ -420,11 +539,11 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
             }
             if (ljpme) {
                 fvec8 C6ij = C6s * _c6;
-                // fvec8 inverseR2 = inverseR*inverseR;
+                // fvec8 invR2 = invR*invR;
                 // fvec8 mysig2 = sig*sig;
                 // fvec8 mysig6 = mysig2*mysig2*mysig2;
                 fvec8 emult = C6ij*exptermsApprox(r);
-                // fvec8 potentialShift = eps*(1.0f-mysig6*inverseRcut6)*mysig6*inverseRcut6 - C6ij*inverseRcut6Expterm;
+                // fvec8 potentialShift = eps*(1.0f-mysig6*invRcut6)*mysig6*invRcut6 - C6ij*invRcut6Expterm;
                 dEdR += 6.0f*C6ij*dExptermsApprox(r);
                 energy += emult/* + potentialShift*/;
             }
@@ -435,14 +554,14 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
         //     dEdR = 0.0f;
         // }
         fvec8 chargeProd = blockAtomCharge*posq[4*atom+3];
-        dEdR += chargeProd*inverseR*ewaldScaleFunction(r);
-        dEdR *= inverseR2;
+        dEdR += chargeProd*invR*ewaldScaleFunction(r);
+        dEdR *= invR2;
 
         // Accumulate energies.
 
         fvec8 one(1.0f);
         if (totalEnergy) {
-            energy += chargeProd*inverseR*erfcApprox(alphaEwald*r);
+            energy += chargeProd*invR*erfcApprox(alphaEwald*r);
             energy = blend(0.0f, energy, include);
             *totalEnergy += dot8(energy, one);
         }

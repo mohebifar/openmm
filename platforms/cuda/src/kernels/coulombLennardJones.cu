@@ -186,11 +186,11 @@ if (combinedB == 0.0f) {
         real buckinghamExp = -2.0f * combinedB * r;
         real buckinghamRepulsion = combinedA * EXP(buckinghamExp);
 
-    	tempForce = -buckinghamExp * buckinghamRepulsion + 12.0f * c12 - 6.0f * invR6 * c6 - 8.0f * invR8 * c8 - 10.0f * invR10 * c10;
-    	real ljEnergy = buckinghamRepulsion + c12 - invR6 * c6 - invR8 * c8 - invR10 * c10;
+    	// tempForce = -buckinghamExp * buckinghamRepulsion + 12.0f * c12 - 6.0f * invR6 * c6 - 8.0f * invR8 * c8 - 10.0f * invR10 * c10;
+    	// real ljEnergy = buckinghamRepulsion + c12 - invR6 * c6 - invR8 * c8 - invR10 * c10;
 
-    	// tempForce = -buckinghamExp * buckinghamRepulsion + 12.0f * c12 - c6Deriv * c6 - c8Deriv * c8 - c10Deriv * c10;
-    	// real ljEnergy = buckinghamRepulsion + c12 - c6E * c6 - c8E * c8 -c10E * c10;
+    	tempForce = -buckinghamExp * buckinghamRepulsion + 12.0f * c12 - c6Deriv * c6 - c8Deriv * c8 - c10Deriv * c10;
+    	real ljEnergy = buckinghamRepulsion + c12 - c6E * c6 - c8E * c8 -c10E * c10;
 
 //	if (combinedB != 0.0f) {
 //		printf("SEC, r: %f, Force: %f, Energy: %f, rep: %f \n", r, tempForce, ljEnergy, buckinghamRepulsion);
@@ -258,11 +258,11 @@ if (combinedB == 0.0f) {
     real buckinghamExp = -2.0f * combinedB * r;
     real buckinghamRepulsion = combinedA * EXP(buckinghamExp);
 
-    tempForce = -buckinghamExp * buckinghamRepulsion + 12.0f * c12 - 6.0f * invR6 * c6 - 8.0f * invR8 * c8 - 10.0f * invR10 * c10;
-    real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - invR6 * c6 - invR8 * c8 - invR10 * c10 : 0;
+    // tempForce = -buckinghamExp * buckinghamRepulsion + 12.0f * c12 - 6.0f * invR6 * c6 - 8.0f * invR8 * c8 - 10.0f * invR10 * c10;
+    // real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - invR6 * c6 - invR8 * c8 - invR10 * c10 : 0;
 
-    // tempForce = -buckinghamExp * buckinghamRepulsion + 12.0f * c12 - c6Deriv *c6 - c8Deriv * c8 - c10Deriv * c10;
-    // real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - c6E * c6 - c8E *c8 -c10E * c10 : 0;
+    tempForce = -buckinghamExp * buckinghamRepulsion + 12.0f * c12 - c6Deriv *c6 - c8Deriv * c8 - c10Deriv * c10;
+    real ljEnergy = includeInteraction ? buckinghamRepulsion + c12 - c6E * c6 - c8E *c8 -c10E * c10 : 0;
 
 
     #if USE_LJ_SWITCH
