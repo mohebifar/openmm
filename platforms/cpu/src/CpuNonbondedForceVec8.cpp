@@ -268,7 +268,7 @@ void CpuNonbondedForceVec8::calculateBlockIxnImpl(int blockIndex, float* forces,
         //     dEdR = epsSig6*(12.0f*sig6 - 6.0f);
         //     energy = epsSig6*(sig6-1.0f);
 
-            dEdR = buckRepulsionExp * buckRepulsion + 12.0f * _c12 - 6.0f * (_c6 * C6Deriv) - 8.0f * (_c8 * C8Deriv) - 10.0f * (_c10 * C10Deriv);
+            dEdR = buckRepulsionExp * buckRepulsion + 12.0f * _c12 - 6.0f * (_c6 * c6Deriv) - 8.0f * (_c8 * c8Deriv) - 10.0f * (_c10 * c10Deriv);
             energy = buckRepulsion + _c12 - (_c6 * c6E) - (_c8 * c8E) - (_c10 * c10E);
             // dEdR = buckRepulsionExp * buckRepulsion + 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
             // energy = buckRepulsion + (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
@@ -519,7 +519,7 @@ void CpuNonbondedForceVec8::calculateBlockEwaldIxnImpl(int blockIndex, float* fo
             // fvec8 t_dEdR = epsSig6*(12.0f*sig6 - 6.0f);
             // fvec8 t_energy = epsSig6*(sig6-1.0f);
 
-            dEdR = buckRepulsionExp * buckRepulsion + 12.0f * _c12 - 6.0f * (_c6 * C6Deriv) - 8.0f * (_c8 * C8Deriv) - 10.0f * (_c10 * C10Deriv);
+            dEdR = buckRepulsionExp * buckRepulsion + 12.0f * _c12 - 6.0f * (_c6 * c6Deriv) - 8.0f * (_c8 * c8Deriv) - 10.0f * (_c10 * c10Deriv);
             energy = buckRepulsion + _c12 - (_c6 * c6E) - (_c8 * c8E) - (_c10 * c10E);
             // dEdR = r * buckRepulsion * buckRepulsionCombinedB + 12.0f * (_c12 * C12s) - 6.0f * (_c6 * C6s) - 8.0f * (_c8 * C8s) - 10.0f * (_c10 * C10s);
             // energy = buckRepulsion + (_c12 * C12s) - (_c6 * C6s) - (_c8 * C8s) - (_c10 * C10s);
