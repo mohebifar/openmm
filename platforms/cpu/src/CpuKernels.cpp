@@ -567,7 +567,7 @@ void CpuCalcNonbondedForceKernel::initialize(const System& system, const Nonbond
         double charge, radius, depth, c6, c8, c10, c12, a, b;
         force.getParticleParametersDisp(i, charge, radius, depth, c6, c8, c10, c12, a, b);
         data.posq[4*i+3] = (float) charge;
-        particleParams[i] = make_pair((float) (0.5*radius), (float) (2.0*sqrt(depth)));
+        particleParams[i] = make_pair((float) (0.5*radius), (float) (0.5*depth));
         C6params[i] = sqrt(c6);
         C8params[i] = sqrt(c8);
         C10params[i] = sqrt(c10);
@@ -741,7 +741,7 @@ void CpuCalcNonbondedForceKernel::copyParametersToContext(ContextImpl& context, 
         double charge, radius, depth, c6, c8, c10, c12, a, b;
         force.getParticleParametersDisp(i, charge, radius, depth, c6, c8, c10, c12, a, b);
         data.posq[4*i+3] = (float) charge;
-        particleParams[i] = make_pair((float) (0.5*radius), (float) (2.0*sqrt(depth)));
+        particleParams[i] = make_pair((float) (0.5*radius), (float) (0.5*depth));
         C6params[i] = sqrt(c6);
         C8params[i] = sqrt(c8);
         C10params[i] = sqrt(c10);
