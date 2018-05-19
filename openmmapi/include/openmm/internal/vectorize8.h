@@ -191,6 +191,10 @@ static inline fvec8 sqrt(const fvec8& v) {
     return fvec8(_mm256_sqrt_ps(v.val));
 }
 
+static inline fvec8 exp(const fvec8& v) {
+    return fvec8(_mm256_exp_ps(v.val));
+}
+
 static inline fvec8 rsqrt(const fvec8& v) {
     // Initial estimate of rsqrt().
 

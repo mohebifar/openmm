@@ -557,13 +557,23 @@ void CpuCalcNonbondedForceKernel::initialize(const System& system, const Nonbond
         bonded14ParamArray[i] = new double[3];
     particleParams.resize(numParticles);
     C6params.resize(numParticles);
+    C8params.resize(numParticles);
+    C10params.resize(numParticles);
+    C12params.resize(numParticles);
+    Aparams.resize(numParticles);
+    Bparams.resize(numParticles);
     double sumSquaredCharges = 0.0;
     for (int i = 0; i < numParticles; ++i) {
-        double charge, radius, depth;
-        force.getParticleParameters(i, charge, radius, depth);
+        double charge, radius, depth, c6, c8, c10, c12, a, b;
+        force.getParticleParametersDisp(i, charge, radius, depth, c6, c8, c10, c12, a, b);
         data.posq[4*i+3] = (float) charge;
-        particleParams[i] = make_pair((float) (0.5*radius), (float) (2.0*sqrt(depth)));
-        C6params[i] = 8.0*pow(particleParams[i].first, 3.0) * particleParams[i].second;
+        particleParams[i] = make_pair((float) (0.5*radius), (float) (0.5*depth));
+        C6params[i] = sqrt(c6);
+        C8params[i] = sqrt(c8);
+        C10params[i] = sqrt(c10);
+        C12params[i] = sqrt(c12);
+        Aparams[i] = sqrt(a);
+        Bparams[i] = sqrt(b);
         sumSquaredCharges += charge*charge;
     }
     
@@ -689,7 +699,7 @@ double CpuCalcNonbondedForceKernel::execute(ContextImpl& context, bool includeFo
     }
     double nonbondedEnergy = 0;
     if (includeDirect)
-        nonbonded->calculateDirectIxn(numParticles, &posq[0], posData, particleParams, C6params, exclusions, data.threadForce, includeEnergy ? &nonbondedEnergy : NULL, data.threads);
+        nonbonded->calculateDirectIxn(numParticles, &posq[0], posData, particleParams, C6params, C8params, C10params, C12params, Aparams, Bparams, exclusions, data.threadForce, includeEnergy ? &nonbondedEnergy : NULL, data.threads);
     if (includeReciprocal) {
         if (useOptimizedPme) {
             PmeIO io(&posq[0], &data.threadForce[0][0], numParticles);
@@ -728,10 +738,16 @@ void CpuCalcNonbondedForceKernel::copyParametersToContext(ContextImpl& context, 
 
     double sumSquaredCharges = 0.0;
     for (int i = 0; i < numParticles; ++i) {
-        double charge, radius, depth;
-        force.getParticleParameters(i, charge, radius, depth);
+        double charge, radius, depth, c6, c8, c10, c12, a, b;
+        force.getParticleParametersDisp(i, charge, radius, depth, c6, c8, c10, c12, a, b);
         data.posq[4*i+3] = (float) charge;
-        particleParams[i] = make_pair((float) (0.5*radius), (float) (2.0*sqrt(depth)));
+        particleParams[i] = make_pair((float) (0.5*radius), (float) (0.5*depth));
+        C6params[i] = sqrt(c6);
+        C8params[i] = sqrt(c8);
+        C10params[i] = sqrt(c10);
+        C12params[i] = sqrt(c12);
+        Aparams[i] = sqrt(a);
+        Bparams[i] = sqrt(b);
         sumSquaredCharges += charge*charge;
     }
     if (nonbondedMethod == Ewald || nonbondedMethod == PME)
@@ -1018,6 +1034,8 @@ CpuCalcCustomGBForceKernel::~CpuCalcCustomGBForceKernel() {
     }
     if (ixn != NULL)
         delete ixn;
+    if (neighborList != NULL)
+        delete neighborList;
 }
 
 void CpuCalcCustomGBForceKernel::initialize(const System& system, const CustomGBForce& force) {
@@ -1064,7 +1082,7 @@ void CpuCalcCustomGBForceKernel::initialize(const System& system, const CustomGB
     nonbondedMethod = CalcCustomGBForceKernel::NonbondedMethod(force.getNonbondedMethod());
     nonbondedCutoff = force.getCutoffDistance();
     if (nonbondedMethod != NoCutoff)
-        data.requestNeighborList(nonbondedCutoff, 0.25*nonbondedCutoff, force.getNumExclusions() > 0, exclusions);
+        neighborList = new CpuNeighborList(4);
 
     // Create custom functions for the tabulated functions.
 
@@ -1171,7 +1189,8 @@ double CpuCalcCustomGBForceKernel::execute(ContextImpl& context, bool includeFor
         ixn->setPeriodic(extractBoxSize(context));
     if (nonbondedMethod != NoCutoff) {
         vector<set<int> > noExclusions(numParticles);
-        ixn->setUseCutoff(nonbondedCutoff, *data.neighborList);
+        neighborList->computeNeighborList(numParticles, data.posq, noExclusions, boxVectors, data.isPeriodic, nonbondedCutoff, data.threads);
+        ixn->setUseCutoff(nonbondedCutoff, *neighborList);
     }
     map<string, double> globalParameters;
     for (auto& name : globalParameterNames)

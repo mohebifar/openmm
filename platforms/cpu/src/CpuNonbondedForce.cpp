@@ -377,7 +377,8 @@ void CpuNonbondedForce::calculateReciprocalIxn(int numberOfAtoms, float* posq, c
 
 
 void CpuNonbondedForce::calculateDirectIxn(int numberOfAtoms, float* posq, const vector<Vec3>& atomCoordinates, const vector<pair<float, float> >& atomParameters,
-                                           const vector<float>& C6params, const vector<set<int> >& exclusions, vector<AlignedArray<float> >& threadForce, double* totalEnergy, ThreadPool& threads) {
+    const vector<float>& C6params, const vector<float>& C8params, const vector<float>& C10params, const vector<float>& C12params, const vector<float>& Aparams, const vector<float>& Bparams,
+    const vector<set<int> >& exclusions, vector<AlignedArray<float> >& threadForce, double* totalEnergy, ThreadPool& threads) {
     // Record the parameters for the threads.
     
     this->numberOfAtoms = numberOfAtoms;
@@ -385,6 +386,11 @@ void CpuNonbondedForce::calculateDirectIxn(int numberOfAtoms, float* posq, const
     this->atomCoordinates = &atomCoordinates[0];
     this->atomParameters = &atomParameters[0];
     this->C6params = &C6params[0];
+    this->C8params = &C8params[0];
+    this->C10params = &C10params[0];
+    this->C12params = &C12params[0];
+    this->Aparams = &Aparams[0];
+    this->Bparams = &Bparams[0];
     this->exclusions = &exclusions[0];
     this->threadForce = &threadForce;
     includeEnergy = (totalEnergy != NULL);
@@ -513,6 +519,11 @@ void CpuNonbondedForce::threadComputeDirect(ThreadPool& threads, int threadIndex
 void CpuNonbondedForce::calculateOneIxn(int ii, int jj, float* forces, double* totalEnergy, const fvec4& boxSize, const fvec4& invBoxSize) {
     // get deltaR, R2, and R between 2 atoms
 
+    float c6 = C6params[ii] * C6params[jj];
+    float c8 = C8params[ii] * C8params[jj];
+    float c10 = C10params[ii] * C10params[jj];
+    float c12 = C12params[ii] * C12params[jj];
+
     fvec4 deltaR;
     fvec4 posI(posq+4*ii);
     fvec4 posJ(posq+4*jj);
@@ -528,20 +539,59 @@ void CpuNonbondedForce::calculateOneIxn(int ii, int jj, float* forces, double* t
         switchValue = 1+t*t*t*(-10+t*(15-t*6));
         switchDeriv = t*t*(-30+t*(60-t*30))/(cutoffDistance-switchingDistance);
     }
-    float sig       = atomParameters[ii].first + atomParameters[jj].first;
-    float sig2      = inverseR*sig;
-    sig2     *= sig2;
-    float sig6      = sig2*sig2*sig2;
+    // float sig       = atomParameters[ii].first + atomParameters[jj].first;
+    // float sig2      = inverseR*sig;
+    // sig2     *= sig2;
+    // float sig6      = sig2*sig2*sig2;
+    // float eps       = atomParameters[ii].second*atomParameters[jj].second;
+    
+    // LJ
+    // float dEdR      = switchValue*eps*(12.0f*sig6 - 6.0f)*sig6;
 
-    float eps       = atomParameters[ii].second*atomParameters[jj].second;
-    float dEdR      = switchValue*eps*(12.0f*sig6 - 6.0f)*sig6;
+    // LJ-Buck
+    // float dEdR      = eps*(12.0f*sig6*sig6);
+
+    // BUCK
+    float dEdR = 0;
+
+    // SHARED
+    float inverseR2 = inverseR * inverseR;
+    float inverseR6 = inverseR2 * inverseR2 * inverseR2;
+    c6 *= inverseR6;
+    c8 *= inverseR6 * inverseR2;
+    c10 *= inverseR6 * inverseR2 * inverseR2;
+    c12 *= inverseR6 * inverseR6;
+
+    // BUCK
+    // dEdR       = A*b*exp(-b*r);
+    dEdR       = c12;
+    dEdR      += -6.0f*c6-8.0f*c8-10.0f*c10;
+    dEdR      *= switchValue;
+    // END SHARED
+
     float chargeProd = ONE_4PI_EPS0*posq[4*ii+3]*posq[4*jj+3];
+
     if (cutoff)
         dEdR += (float) (chargeProd*(inverseR-2.0f*krf*r2));
     else
         dEdR += (float) (chargeProd*inverseR);
     dEdR *= inverseR*inverseR;
-    float energy = eps*(sig6-1.0f)*sig6;
+
+    // LJ
+    // float energy = eps*(sig6-1.0f)*sig6;
+    
+    // LJ-Buck
+    // float energy = eps*sig6*sig6;
+
+    // BUCK
+    float energy = 0;
+    // if (eps != 0.0f) {
+    // BUCK
+    // energy       = A*exp(-b*r);
+    energy       = c12;
+    energy      += -c6-c8-c10;
+    // }
+
     if (useSwitch) {
         dEdR -= energy*switchDeriv*inverseR;
         energy *= switchValue;

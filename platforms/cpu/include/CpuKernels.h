@@ -277,6 +277,11 @@ private:
     std::vector<std::set<int> > exclusions;
     std::vector<std::pair<float, float> > particleParams;
     std::vector<float> C6params;
+    std::vector<float> C8params;
+    std::vector<float> C10params;
+    std::vector<float> C12params;
+    std::vector<float> Aparams;
+    std::vector<float> Bparams;
     NonbondedMethod nonbondedMethod;
     CpuNonbondedForce* nonbonded;
     Kernel optimizedPme, optimizedDispersionPme;
@@ -373,7 +378,7 @@ private:
 class CpuCalcCustomGBForceKernel : public CalcCustomGBForceKernel {
 public:
     CpuCalcCustomGBForceKernel(std::string name, const Platform& platform, CpuPlatform::PlatformData& data) :
-            CalcCustomGBForceKernel(name, platform), data(data) {
+            CalcCustomGBForceKernel(name, platform), data(data), ixn(NULL), neighborList(NULL) {
     }
     ~CpuCalcCustomGBForceKernel();
     /**
@@ -406,6 +411,7 @@ private:
     double **particleParamArray;
     double nonbondedCutoff;
     CpuCustomGBForce* ixn;
+    CpuNeighborList* neighborList;
     std::vector<std::set<int> > exclusions;
     std::vector<std::string> particleParameterNames, globalParameterNames, energyParamDerivNames, valueNames;
     std::vector<OpenMM::CustomGBForce::ComputationType> valueTypes;

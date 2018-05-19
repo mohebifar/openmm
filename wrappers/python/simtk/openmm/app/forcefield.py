@@ -445,17 +445,19 @@ class ForceField(object):
         generator : function
             A function that will be called when a residue is encountered that does not match an existing forcefield template.
 
-        When a residue without a template is encountered, the `generator` function is called with:
+        When a residue without a template is encountered, the ``generator`` function is called with:
 
         ::
            success = generator(forcefield, residue)
-        ```
 
-        where `forcefield` is the calling `ForceField` object and `residue` is a simtk.openmm.app.topology.Residue object.
+        where ``forcefield`` is the calling ``ForceField`` object and ``residue`` is a simtk.openmm.app.topology.Residue object.
 
-        `generator` must conform to the following API:
+        ``generator`` must conform to the following API:
+
         ::
-          Parameters
+           generator API
+
+           Parameters
            ----------
            forcefield : simtk.openmm.app.ForceField
                The ForceField object to which residue templates and/or parameters are to be added.
@@ -647,10 +649,15 @@ class ForceField(object):
                 numAtoms = 3
                 self.weights = [float(attrib['weight12']), float(attrib['weight13']), float(attrib['weightCross'])]
             elif self.type == 'localCoords':
-                numAtoms = 3
-                self.originWeights = [float(attrib['wo1']), float(attrib['wo2']), float(attrib['wo3'])]
-                self.xWeights = [float(attrib['wx1']), float(attrib['wx2']), float(attrib['wx3'])]
-                self.yWeights = [float(attrib['wy1']), float(attrib['wy2']), float(attrib['wy3'])]
+                numAtoms = 0
+                self.originWeights = []
+                self.xWeights = []
+                self.yWeights = []
+                while ('wo%d' % (numAtoms+1)) in attrib:
+                    numAtoms += 1
+                    self.originWeights.append(float(attrib['wo%d' % numAtoms]))
+                    self.xWeights.append(float(attrib['wx%d' % numAtoms]))
+                    self.yWeights.append(float(attrib['wy%d' % numAtoms]))
                 self.localPos = [float(attrib['p1']), float(attrib['p2']), float(attrib['p3'])]
             else:
                 raise ValueError('Unknown virtual site type: %s' % self.type)
@@ -1255,11 +1262,7 @@ class ForceField(object):
             elif site.type == 'outOfPlane':
                 sys.setVirtualSite(index, mm.OutOfPlaneSite(atoms[0], atoms[1], atoms[2], site.weights[0], site.weights[1], site.weights[2]))
             elif site.type == 'localCoords':
-                sys.setVirtualSite(index, mm.LocalCoordinatesSite(atoms[0], atoms[1], atoms[2],
-                                                                  mm.Vec3(site.originWeights[0], site.originWeights[1], site.originWeights[2]),
-                                                                  mm.Vec3(site.xWeights[0], site.xWeights[1], site.xWeights[2]),
-                                                                  mm.Vec3(site.yWeights[0], site.yWeights[1], site.yWeights[2]),
-                                                                  mm.Vec3(site.localPos[0], site.localPos[1], site.localPos[2])))
+                sys.setVirtualSite(index, mm.LocalCoordinatesSite(atoms, site.originWeights, site.xWeights, site.yWeights, site.localPos))
 
         # Add forces to the System
 
@@ -2268,11 +2271,12 @@ class NonbondedGenerator(object):
 
     SCALETOL = 1e-5
 
-    def __init__(self, forcefield, coulomb14scale, lj14scale):
+    def __init__(self, forcefield, coulomb14scale, lj14scale, method='lennardJones'):
         self.ff = forcefield
         self.coulomb14scale = coulomb14scale
         self.lj14scale = lj14scale
-        self.params = ForceField._AtomTypeParameters(forcefield, 'NonbondedForce', 'Atom', ('charge', 'sigma', 'epsilon'))
+        self.method = method
+        self.params = ForceField._AtomTypeParameters(forcefield, 'NonbondedForce', 'Atom', ('charge', 'sigma', 'epsilon', 'c6', 'c8', 'c10', 'c12', 'a', 'b'))
 
     def registerAtom(self, parameters):
         self.params.registerAtom(parameters)
@@ -2281,7 +2285,7 @@ class NonbondedGenerator(object):
     def parseElement(element, ff):
         existing = [f for f in ff._forces if isinstance(f, NonbondedGenerator)]
         if len(existing) == 0:
-            generator = NonbondedGenerator(ff, float(element.attrib['coulomb14scale']), float(element.attrib['lj14scale']))
+            generator = NonbondedGenerator(ff, float(element.attrib['coulomb14scale']), float(element.attrib['lj14scale']), element.attrib['method'])
             ff.registerGenerator(generator)
         else:
             # Multiple <NonbondedForce> tags were found, probably in different files.  Simply add more types to the existing one.
@@ -2303,7 +2307,7 @@ class NonbondedGenerator(object):
         force = mm.NonbondedForce()
         for atom in data.atoms:
             values = self.params.getAtomParameters(atom, data)
-            force.addParticle(values[0], values[1], values[2])
+            force.addParticleDisp(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8])
         force.setNonbondedMethod(methodMap[nonbondedMethod])
         force.setCutoffDistance(nonbondedCutoff)
         if 'ewaldErrorTolerance' in args:
@@ -2330,7 +2334,7 @@ class LennardJonesGenerator(object):
         self.ff = forcefield
         self.nbfixTypes = {}
         self.lj14scale = lj14scale
-        self.ljTypes = ForceField._AtomTypeParameters(forcefield, 'LennardJonesForce', 'Atom', ('sigma', 'epsilon'))
+        self.ljTypes = ForceField._AtomTypeParameters(forcefield, 'LennardJonesForce', 'Atom', ('sigma', 'epsilon', 'c6', 'c8', 'c10', 'c12', 'a', 'b'))
 
     def registerNBFIX(self, parameters):
         types = self.ff._findAtomTypes(parameters, 2)
@@ -4033,7 +4037,7 @@ class AmoebaTorsionTorsionGenerator(object):
             # raise error if atoms E or F not found
 
             if (atomE == -1 or atomF == -1):
-                outputString = "getChiralAtomIndex: error getting bonded partners of atomC=%s %d %s" % (atomC.name, atomC.resiude.index, atomC.resiude.name,)
+                outputString = "getChiralAtomIndex: error getting bonded partners of atomC=%s %d %s" % (atomC.name, atomC.residue.index, atomC.residue.name,)
                 raise ValueError(outputString)
 
             # check for different type/mass between atoms E & F

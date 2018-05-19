@@ -161,7 +161,7 @@ class CpuNonbondedForce {
          --------------------------------------------------------------------------------------- */
           
       void calculateDirectIxn(int numberOfAtoms, float* posq, const std::vector<Vec3>& atomCoordinates, const std::vector<std::pair<float, float> >& atomParameters,
-            const std::vector<float>& C6params, const std::vector<std::set<int> >& exclusions, std::vector<AlignedArray<float> >& threadForce, double* totalEnergy, ThreadPool& threads);
+            const std::vector<float>& C6params, const std::vector<float>& C8params, const std::vector<float>& C10params, const std::vector<float>& C12params, const std::vector<float>& Aparams, const std::vector<float>& Bparams, const std::vector<std::set<int> >& exclusions, std::vector<AlignedArray<float> >& threadForce, double* totalEnergy, ThreadPool& threads);
 
     /**
      * This routine contains the code executed by each thread.
@@ -195,6 +195,11 @@ protected:
         Vec3 const* atomCoordinates;
         std::pair<float, float> const* atomParameters;        
         float const *C6params;
+        float const *C8params;
+        float const *C10params;
+        float const *C12params;
+        float const *Aparams;
+        float const *Bparams;
         std::set<int> const* exclusions;
         std::vector<AlignedArray<float> >* threadForce;
         bool includeEnergy;
